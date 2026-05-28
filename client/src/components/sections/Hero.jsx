@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { TypeAnimation } from 'react-type-animation'
 
-import profile from '../../assets/profile.jpeg'
+const profile = '/profile.jpeg'
 
 const Hero = () => {
 

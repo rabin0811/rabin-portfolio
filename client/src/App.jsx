@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
+
 import {
-  BrowserRouter,
   Routes,
   Route,
   useLocation
@@ -14,6 +14,7 @@ import Skills from './components/sections/Skills.jsx'
 import ProjectsSection from './components/sections/Projects.jsx'
 import Contact from './components/sections/Contact.jsx'
 import Footer from './components/sections/Footer.jsx'
+
 import ProtectedRoute from './admin/components/ProtectedRoute.jsx'
 
 import Dashboard from './admin/pages/Dashboard.jsx'
@@ -23,43 +24,72 @@ import Projects from './admin/pages/Projects.jsx'
 import Uploads from './admin/pages/Uploads.jsx'
 import Messages from './admin/pages/Messages.jsx'
 
-// A small internal component to listen for URL path changes and adjust the document title dynamically
+import SEO from './components/SEO.jsx'
+
 const TitleManager = () => {
+
   const location = useLocation()
 
   useEffect(() => {
+
     if (location.pathname.startsWith('/admin')) {
-      document.title = 'Rabin Humagain_Admin'
+
+      document.title = 'Rabin Humagain Admin'
+
     } else {
+
       document.title = 'Rabin Humagain'
+
     }
+
   }, [location])
 
-  return null // This component doesn't render any visible UI
+  return null
 }
 
 function HomePage() {
+
   return (
-    /* Changed hardcoded bg-black to adapt gracefully if you use global light/dark background wrappers */
+
     <div className="bg-white dark:bg-black text-zinc-900 dark:text-white min-h-screen transition-colors duration-300">
+
+      <SEO
+        title="Rabin Humagain | Full Stack Developer"
+        description="Modern portfolio website of Rabin Humagain. Full stack developer, backend enthusiast, React developer, Node.js developer, and computer engineering student."
+        keywords="Rabin Humagain, Full Stack Developer, React Developer, Node Developer, Portfolio Website"
+        image="/profile.jpeg"
+        url="https://rabin-portfolio.vercel.app"
+      />
+
       <Navbar />
+
       <Hero />
+
       <About />
+
       <Skills />
+
       <ProjectsSection />
+
       <Contact />
+
       <Footer />
+
     </div>
+
   )
 }
 
 function App() {
+
   return (
-    <BrowserRouter>
-      {/* The TitleManager sits inside BrowserRouter to monitor routing states */}
+
+    <>
+
       <TitleManager />
 
       <Routes>
+
         <Route
           path="/"
           element={<HomePage />}
@@ -107,16 +137,18 @@ function App() {
         />
 
         <Route
-          path='/admin/messages'
+          path="/admin/messages"
           element={
             <ProtectedRoute>
               <Messages />
             </ProtectedRoute>
           }
         />
+
       </Routes>
 
-    </BrowserRouter>
+    </>
+
   )
 }
 
