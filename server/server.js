@@ -1,0 +1,40 @@
+const express = require('express')
+const cors = require('cors')
+const dotenv = require('dotenv')
+const path = require('path')
+
+dotenv.config()
+
+const app = express()
+
+app.use(cors())
+app.use(express.json())
+app.use('/uploads', express.static(
+  path.join(__dirname, 'uploads')
+))
+
+const contactRoutes = require('./routes/contactRoutes')
+const authRoutes = require('./routes/authRoutes')
+const blogRoutes = require('./routes/blogRoutes')
+const projectRoutes = require('./routes/projectRoutes')
+const uploadRoutes = require('./routes/uploadRoutes')
+const analyticsRoutes = require('./routes/analyticsRoutes')
+const visitorRoutes = require('./routes/visitorRoutes')
+
+app.use('/api/contact', contactRoutes)
+app.use('/api/auth', authRoutes)
+app.use('/api/blogs', blogRoutes)
+app.use('/api/projects', projectRoutes)
+app.use('/api/upload', uploadRoutes)
+app.use('/api/analytics', analyticsRoutes)
+app.use('/api/visitors', visitorRoutes)
+
+app.get('/', (req, res) => {
+  res.send('Portfolio API Running')
+})
+
+const PORT = process.env.PORT || 5000
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`)
+})
