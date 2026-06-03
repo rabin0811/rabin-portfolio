@@ -1,5 +1,3 @@
-import { useEffect } from 'react'
-
 import {
   Routes,
   Route,
@@ -30,27 +28,30 @@ import Messages from './admin/pages/Messages.jsx'
 import Register from './admin/pages/Register.jsx'
 import Profile from './admin/pages/Profile.jsx'
 
+import { Helmet } from 'react-helmet-async'
 import SEO from './components/SEO.jsx'
 
-const TitleManager = () => {
-
+const AdminTitle = () => {
   const location = useLocation()
+  const titles = {
+    '/admin': 'Admin Login',
+    '/admin/dashboard': 'Dashboard',
+    '/admin/blogs': 'Manage Blogs',
+    '/admin/projects': 'Manage Projects',
+    '/admin/gallery': 'Manage Gallery',
+    '/admin/uploads': 'Upload Center',
+    '/admin/messages': 'Messages',
+    '/admin/register': 'Register Admin',
+    '/admin/profile': 'Profile',
+  }
+  const page = Object.keys(titles).find((p) => location.pathname === p) ? Object.keys(titles).find((p) => location.pathname === p) : '/admin'
 
-  useEffect(() => {
-
-    if (location.pathname.startsWith('/admin')) {
-
-      document.title = 'Rabin Humagain Admin'
-
-    } else {
-
-      document.title = 'Rabin Humagain'
-
-    }
-
-  }, [location])
-
-  return null
+  return (
+    <Helmet>
+      <title>{titles[page]} | Rabin Humagain Admin</title>
+      <meta name="robots" content="noindex, nofollow" />
+    </Helmet>
+  )
 }
 
 function HomePage() {
@@ -61,10 +62,25 @@ function HomePage() {
 
       <SEO
         title="Rabin Humagain | Full Stack Developer"
-        description="Modern portfolio website of Rabin Humagain. Full stack developer, backend enthusiast, React developer, Node.js developer, and computer engineering student."
-        keywords="Rabin Humagain, Full Stack Developer, React Developer, Node Developer, Portfolio Website"
+        description="Modern portfolio website of Rabin Humagain. Full stack developer, backend enthusiast, React developer, Node.js developer, and computer engineering student from Nepal."
+        keywords="Rabin Humagain, Full Stack Developer, React Developer, Node Developer, Portfolio Website, Backend Enthusiast, Nepal"
         image="/profile.jpeg"
         url="https://rabin-portfolio.vercel.app"
+        schema={{
+            '@context': 'https://schema.org',
+            '@type': 'Person',
+            name: 'Rabin Humagain',
+            url: 'https://rabin-portfolio.vercel.app',
+            image: 'https://rabin-portfolio.vercel.app/profile.jpeg',
+            jobTitle: 'Full Stack Developer',
+            description: 'Computer Engineering Student and Full Stack Developer',
+            sameAs: [
+                'https://github.com/rabin0811',
+                'https://www.linkedin.com/in/rabin-humagain-417a35410',
+                'https://facebook.com/rabin.humagai',
+                'https://instagram.com/__ra_bin__',
+            ],
+        }}
       />
 
       <Navbar />
@@ -98,7 +114,7 @@ function App() {
 
     <>
 
-      <TitleManager />
+      <AdminTitle />
 
       <Routes>
 
