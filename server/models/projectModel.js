@@ -1,25 +1,23 @@
-const prisma = require('../prismaClient')
+const prisma = require('../db')
 
 const createProject = async (data) => {
-    return await prisma.project.create({
-        data,
+    return prisma.project.create({
+        data: {
+            title: data.title,
+            description: data.description,
+            image: data.image,
+            github: data.github,
+            liveDemo: data.liveDemo,
+        },
     })
 }
 
 const getProjects = async () => {
-    return await prisma.project.findMany({
-        orderBy: {
-            createdAt: 'desc',
-        },
-    })
+    return prisma.project.findMany({ orderBy: { createdAt: 'desc' } })
 }
 
 const deleteProject = async (id) => {
-    return await prisma.project.delete({
-        where: {
-            id: Number(id),
-        },
-    })
+    await prisma.project.delete({ where: { id: Number(id) } })
 }
 
 module.exports = {

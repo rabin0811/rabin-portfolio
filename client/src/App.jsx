@@ -9,8 +9,11 @@ import {
 import Navbar from './components/layout/Navbar.jsx'
 
 import Hero from './components/sections/Hero.jsx'
+import PortfolioSlideshow from './components/sections/PortfolioSlideshow.jsx'
 import About from './components/sections/About.jsx'
+import Certifications from './components/sections/Certifications.jsx'
 import Skills from './components/sections/Skills.jsx'
+import BlogSection from './components/sections/Blog.jsx'
 import ProjectsSection from './components/sections/Projects.jsx'
 import Contact from './components/sections/Contact.jsx'
 import Footer from './components/sections/Footer.jsx'
@@ -22,7 +25,10 @@ import AdminLogin from './admin/pages/AdminLogin.jsx'
 import Blogs from './admin/pages/Blogs.jsx'
 import Projects from './admin/pages/Projects.jsx'
 import Uploads from './admin/pages/Uploads.jsx'
+import Gallery from './admin/pages/Gallery.jsx'
 import Messages from './admin/pages/Messages.jsx'
+import Register from './admin/pages/Register.jsx'
+import Profile from './admin/pages/Profile.jsx'
 
 import SEO from './components/SEO.jsx'
 
@@ -65,9 +71,15 @@ function HomePage() {
 
       <Hero />
 
+      <PortfolioSlideshow />
+
       <About />
 
+      <Certifications />
+
       <Skills />
+
+      <BlogSection />
 
       <ProjectsSection />
 
@@ -128,6 +140,15 @@ function App() {
         />
 
         <Route
+          path="/admin/gallery"
+          element={
+            <ProtectedRoute>
+              <Gallery />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/admin/uploads"
           element={
             <ProtectedRoute>
@@ -145,6 +166,19 @@ function App() {
           }
         />
 
+        <Route
+          path="/admin/register"
+          element={<Register />}
+        />
+
+        <Route
+          path="/admin/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
 
     </>

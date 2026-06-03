@@ -9,27 +9,47 @@ import {
     ResponsiveContainer
 } from 'recharts'
 
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 import Sidebar from '../components/Sidebar'
-
-const data = [
-    {
-        name: 'Blogs',
-        total: 12,
-        color: '#4ade80' // Parrot Green (Tailwind green-400)
-    },
-    {
-        name: 'Projects',
-        total: 5,
-        color: '#38bdf8' // Light Blue (Tailwind sky-400)
-    },
-    {
-        name: 'Visitors',
-        total: 1200,
-        color: '#e0f2fe' // Light Light Color / Ice Blue (Tailwind sky-100)
-    },
-]
-
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 const Dashboard = () => {
+    const [stats, setStats] = useState({
+        totalBlogs: 0,
+        totalProjects: 0,
+        totalMessages: 0,
+        visitors: 1200,
+        recentMessages: []
+    })
+
+    const [chartData, setChartData] = useState([
+        { name: 'Blogs', total: 0, color: '#4ade80' },
+        { name: 'Projects', total: 0, color: '#38bdf8' },
+        { name: 'Messages', total: 0, color: '#f472b6' },
+        { name: 'Visitors', total: 0, color: '#e0f2fe' },
+    ])
+
+    useEffect(() => {
+        const fetchAnalytics = async () => {
+            try {
+                const res = await axios.get(`${API}/api/analytics`, {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
+                    }
+                })
+                setStats(res.data)
+                setChartData([
+                    { name: 'Blogs', total: res.data.totalBlogs, color: '#4ade80' },
+                    { name: 'Projects', total: res.data.totalProjects, color: '#38bdf8' },
+                    { name: 'Messages', total: res.data.totalMessages || 0, color: '#f472b6' },
+                    { name: 'Visitors', total: res.data.visitors, color: '#e0f2fe' },
+                ])
+            } catch (error) {
+                console.error("Error fetching analytics", error)
+            }
+        }
+        fetchAnalytics()
+    }, [])
 
     return (
         <div className='flex bg-black text-white min-h-screen font-sans'>
@@ -50,7 +70,7 @@ const Dashboard = () => {
                             Total Blogs
                         </h2>
                         <p className='text-4xl font-bold mt-3 text-white'>
-                            12
+                            {stats.totalBlogs}
                         </p>
                     </div>
 
@@ -59,7 +79,7 @@ const Dashboard = () => {
                             Total Projects
                         </h2>
                         <p className='text-4xl font-bold mt-3 text-white'>
-                            5
+                            {stats.totalProjects}
                         </p>
                     </div>
 
@@ -68,7 +88,7 @@ const Dashboard = () => {
                             Visitors
                         </h2>
                         <p className='text-4xl font-bold mt-3 text-white'>
-                            1,200
+                            {stats.visitors}
                         </p>
                     </div>
 
@@ -84,7 +104,7 @@ const Dashboard = () => {
                     <div className='flex-1 min-h-0 w-full pr-4 pb-2'>
                         <ResponsiveContainer width='100%' height='100%'>
                             <BarChart
-                                data={data}
+                                data={chartData}
                                 margin={{ top: 10, right: 10, left: -10, bottom: 5 }}
                             >
                                 {/* Subtle background grid lines */}
@@ -129,7 +149,7 @@ const Dashboard = () => {
                                     radius={[8, 8, 0, 0]}
                                     maxBarSize={80}
                                 >
-                                    {data.map((entry, index) => (
+                                    {chartData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry.color} />
                                     ))}
                                 </Bar>
@@ -138,6 +158,29 @@ const Dashboard = () => {
                     </div>
 
                 </div>
+
+                {/* RECENT MESSAGES CONTAINER */}
+                {stats.recentMessages && stats.recentMessages.length > 0 && (
+                    <div className='mt-10 bg-zinc-900 rounded-3xl p-6 md:p-8 border border-zinc-800/50 shadow-xl'>
+                        <h2 className='text-2xl font-bold mb-6 text-zinc-100'>
+                            Recent Messages
+                        </h2>
+                        <div className='space-y-4'>
+                            {stats.recentMessages.map((msg) => (
+                                <div key={msg.id} className='bg-zinc-950 p-4 rounded-xl border border-zinc-800'>
+                                    <div className='flex justify-between items-start mb-2'>
+                                        <h3 className='font-semibold text-zinc-100'>{msg.name}</h3>
+                                        <span className='text-xs text-zinc-500'>
+                                            {new Date(msg.createdAt).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                    <p className='text-sm text-zinc-400 font-medium mb-1'>{msg.subject}</p>
+                                    <p className='text-sm text-zinc-500 line-clamp-2'>{msg.message}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
             </div>
         </div>

@@ -7,7 +7,9 @@ const protect =
 
 const {
   sendMessage,
-  getMessages
+  getMessages,
+  deleteMessage,
+  markMessageRead
 } = require('../controllers/contactController')
 
 /* PUBLIC SEND MESSAGE */
@@ -17,5 +19,13 @@ router.post('/', sendMessage)
 /* ADMIN GET MESSAGES */
 
 router.get('/', protect, getMessages)
+
+/* ADMIN DELETE MESSAGE */
+
+router.delete('/:id', protect, deleteMessage)
+
+/* ADMIN MARK MESSAGE READ */
+
+router.put('/:id/read', protect, markMessageRead)
 
 module.exports = router

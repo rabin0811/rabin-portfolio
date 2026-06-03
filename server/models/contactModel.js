@@ -1,11 +1,16 @@
-const prisma = require('../prismaClient')
+const prisma = require('../db')
 
 const createContact = async (data) => {
-  return await prisma.contact.create({
-    data,
-  })
+    return prisma.contact.create({
+        data: {
+            name: data.name,
+            email: data.email,
+            subject: data.subject,
+            message: data.message,
+        },
+    })
 }
 
 module.exports = {
-  createContact,
+    createContact,
 }

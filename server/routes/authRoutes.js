@@ -3,12 +3,18 @@ const express = require('express')
 const router = express.Router()
 
 const {
-    registerAdmin,
-    loginAdmin,
+    googleLogin,
+    googleConfig,
+    checkAdminExists,
+    getPublicProfile,
 } = require('../controllers/authController')
 
-router.post('/register', registerAdmin)
+router.post('/google-login', googleLogin)
 
-router.post('/login', loginAdmin)
+router.get('/google-config', googleConfig)
+
+router.get('/check-admin', checkAdminExists)
+
+router.get('/public-profile', getPublicProfile)
 
 module.exports = router

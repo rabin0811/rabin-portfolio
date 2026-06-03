@@ -1,10 +1,15 @@
 const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
-const { Pool } = require('pg');
+require('dotenv').config();
 
-// Create the PostgreSQL connection pool required for Prisma 7 Driver Adapters
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
+const dbUrl = process.env.DATABASE_URL;
+const isSupabase = dbUrl?.includes('supabase.co');
+
+const adapter = new PrismaPg({
+    connectionString: dbUrl,
+    ...(isSupabase ? { ssl: { rejectUnauthorized: false } } : {}),
+});
+
 const prisma = new PrismaClient({ adapter });
 
 module.exports = prisma;

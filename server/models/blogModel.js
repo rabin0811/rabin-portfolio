@@ -1,25 +1,22 @@
-const prisma = require('../prismaClient')
+const prisma = require('../db')
 
 const createBlog = async (data) => {
-    return await prisma.blog.create({
-        data,
+    return prisma.blog.create({
+        data: {
+            title: data.title,
+            content: data.content,
+            image: data.image,
+            category: data.category,
+        },
     })
 }
 
 const getBlogs = async () => {
-    return await prisma.blog.findMany({
-        orderBy: {
-            createdAt: 'desc',
-        },
-    })
+    return prisma.blog.findMany({ orderBy: { createdAt: 'desc' } })
 }
 
 const deleteBlog = async (id) => {
-    return await prisma.blog.delete({
-        where: {
-            id: Number(id),
-        },
-    })
+    await prisma.blog.delete({ where: { id: Number(id) } })
 }
 
 module.exports = {

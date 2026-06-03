@@ -65,6 +65,13 @@ const Sidebar = () => {
                 </Link>
 
                 <Link
+                    to='/admin/gallery'
+                    className='bg-zinc-900 hover:bg-zinc-800 px-5 py-3 rounded-xl transition'
+                >
+                    Gallery
+                </Link>
+
+                <Link
                     to='/admin/uploads'
                     className='bg-zinc-900 hover:bg-zinc-800 px-5 py-3 rounded-xl transition'
                 >
@@ -73,10 +80,28 @@ const Sidebar = () => {
 
             </nav>
 
+            <Link
+                to='/'
+                className='
+                    mt-10
+                    block
+                    text-center
+                    bg-zinc-800
+                    hover:bg-zinc-700
+                    px-5
+                    py-3
+                    rounded-xl
+                    w-full
+                    transition
+                '
+            >
+                Back to Portfolio
+            </Link>
+
             <button
                 onClick={logout}
                 className='
-                    mt-10
+                    mt-4
                     bg-red-600
                     hover:bg-red-700
                     px-5

@@ -25,7 +25,16 @@ const Navbar = () => {
                     <a href="#about" className="hover:text-primary transition text-zinc-600 dark:text-zinc-300 font-medium text-sm">About</a>
                     <a href="#skills" className="hover:text-primary transition text-zinc-600 dark:text-zinc-300 font-medium text-sm">Skills</a>
                     <a href="#projects" className="hover:text-primary transition text-zinc-600 dark:text-zinc-300 font-medium text-sm">Projects</a>
+                    <a href="#gallery" className="hover:text-primary transition text-zinc-600 dark:text-zinc-300 font-medium text-sm">Gallery</a>
                     <a href="#contact" className="hover:text-primary transition text-zinc-600 dark:text-zinc-300 font-medium text-sm">Contact</a>
+
+                    {/* DESKTOP ADMIN BUTTON */}
+                    <a
+                        href="/admin"
+                        className="border border-primary text-primary hover:bg-primary hover:text-white px-4 py-2 rounded-xl transition font-medium text-sm whitespace-nowrap"
+                    >
+                        Go to Admin
+                    </a>
 
                     {/* DESKTOP TOGGLE BUTTON */}
                     <button
@@ -98,10 +107,25 @@ const Navbar = () => {
                     className="hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:text-primary dark:hover:text-primary px-4 py-3.5 rounded-xl transition-all font-medium text-zinc-600 dark:text-zinc-300 text-lg"
                 >Projects</a>
                 <a
+                    href="#gallery"
+                    onClick={() => setIsOpen(false)}
+                    className="hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:text-primary dark:hover:text-primary px-4 py-3.5 rounded-xl transition-all font-medium text-zinc-600 dark:text-zinc-300 text-lg"
+                >Gallery</a>
+                <a
                     href="#contact"
                     onClick={() => setIsOpen(false)}
                     className="hover:bg-zinc-50 dark:hover:bg-zinc-900 hover:text-primary dark:hover:text-primary px-4 py-3.5 rounded-xl transition-all font-medium text-zinc-600 dark:text-zinc-300 text-lg"
                 >Contact</a>
+
+                <hr className="border-zinc-200 dark:border-zinc-800 my-4" />
+
+                <a
+                    href="/admin"
+                    onClick={() => setIsOpen(false)}
+                    className="block text-center border border-primary text-primary hover:bg-primary hover:text-white px-4 py-3 rounded-xl transition-all font-medium text-lg"
+                >
+                    Go to Admin
+                </a>
             </div>
         </nav>
     )

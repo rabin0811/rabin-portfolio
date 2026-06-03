@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import AdminLayout from '../layout/AdminLayout'
 
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
 const Projects = () => {
 
     const [projects, setProjects] = useState([])
@@ -22,7 +24,7 @@ const Projects = () => {
         try {
 
             const res = await axios.get(
-                'http://localhost:5000/api/projects'
+                `${API}/api/projects`
             )
 
             setProjects(res.data.projects)
@@ -46,7 +48,7 @@ const Projects = () => {
         formData.append('projectImage', image)
 
         const res = await axios.post(
-            'http://localhost:5000/api/upload/project-image',
+            `${API}/api/upload/project-image`,
             formData,
             {
                 headers: {
@@ -72,7 +74,7 @@ const Projects = () => {
             }
 
             await axios.post(
-                'http://localhost:5000/api/projects/add',
+                `${API}/api/projects/add`,
                 {
                     ...form,
                     image: imagePath,
@@ -99,7 +101,7 @@ const Projects = () => {
         try {
 
             await axios.delete(
-                `http://localhost:5000/api/projects/${id}`,
+                `${API}/api/projects/${id}`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -206,7 +208,7 @@ const Projects = () => {
                         {project.image && (
 
                             <img
-                                src={`http://localhost:5000${project.image}`}
+                                src={`${API}${project.image}`}
                                 alt={project.title}
                                 className="w-full h-52 object-cover"
                             />

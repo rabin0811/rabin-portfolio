@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import AdminLayout from '../layout/AdminLayout'
 
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
 const Blogs = () => {
 
     const [blogs, setBlogs] = useState([])
@@ -21,7 +23,7 @@ const Blogs = () => {
         try {
 
             const res = await axios.get(
-                'http://localhost:5000/api/blogs'
+                `${API}/api/blogs`
             )
 
             setBlogs(res.data.blogs)
@@ -45,7 +47,7 @@ const Blogs = () => {
         formData.append('blogImage', image)
 
         const res = await axios.post(
-            'http://localhost:5000/api/upload/blog-image',
+            `${API}/api/upload/blog-image`,
             formData,
             {
                 headers: {
@@ -71,7 +73,7 @@ const Blogs = () => {
             }
 
             await axios.post(
-                'http://localhost:5000/api/blogs/add',
+                `${API}/api/blogs/add`,
                 {
                     ...form,
                     image: imagePath,
@@ -106,7 +108,7 @@ const Blogs = () => {
         try {
 
             await axios.delete(
-                `http://localhost:5000/api/blogs/${id}`,
+                `${API}/api/blogs/${id}`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -204,7 +206,7 @@ const Blogs = () => {
                         {blog.image && (
 
                             <img
-                                src={`http://localhost:5000${blog.image}`}
+                                src={`${API}${blog.image}`}
                                 alt={blog.title}
                                 className="w-full h-52 object-cover"
                             />
