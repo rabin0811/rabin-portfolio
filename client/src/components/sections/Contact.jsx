@@ -1,14 +1,27 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const Contact = () => {
     const nameRef = useRef(null)
     const [showForm, setShowForm] = useState(false)
+    const [backendAlive, setBackendAlive] = useState(true)
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         subject: '',
         message: ''
     })
+
+    useEffect(() => {
+        fetch(`${apiUrl}/api/health`)
+            .then((res) => {
+                if (!res.ok) throw new Error()
+                return res.json()
+            })
+            .then(() => setBackendAlive(true))
+            .catch(() => setBackendAlive(false))
+    }, [])
 
     const handleChange = (e) => {
         setFormData({
@@ -20,9 +33,6 @@ const Contact = () => {
     const handleSubmit = async (e) => {
         e.preventDefault()
         try {
-            // Updated to use environment variables with fallback
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
             const response = await fetch(
                 `${apiUrl}/api/contact`,
                 {
@@ -87,65 +97,75 @@ const Contact = () => {
                             </div>
                         </div>
 
-                        {/* FORM */}
+                        {/* FORM / UNAVAILABLE */}
                         <div
                             className={`overflow-hidden transition-all duration-500 ease-out ${
                                 showForm ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
                             }`}
                         >
                             <div className='border-t border-zinc-200 dark:border-borderColor mx-8 md:mx-10' />
-                            <form
-                                onSubmit={handleSubmit}
-                                className='grid gap-5 p-8 md:p-10 pt-6'
-                            >
-                                <input
-                                    ref={nameRef}
-                                    type='text'
-                                    name='name'
-                                    placeholder='Your Name'
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    className='w-full bg-zinc-50 dark:bg-darkbg p-4 rounded-xl border border-zinc-200 dark:border-borderColor text-zinc-900 dark:text-white outline-none focus:border-primary dark:focus:border-primary transition-colors duration-300'
-                                    required
-                                />
-
-                                <input
-                                    type='email'
-                                    name='email'
-                                    placeholder='Your Email'
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    className='w-full bg-zinc-50 dark:bg-darkbg p-4 rounded-xl border border-zinc-200 dark:border-borderColor text-zinc-900 dark:text-white outline-none focus:border-primary dark:focus:border-primary transition-colors duration-300'
-                                    required
-                                />
-
-                                <input
-                                    type='text'
-                                    name='subject'
-                                    placeholder='Subject'
-                                    value={formData.subject}
-                                    onChange={handleChange}
-                                    className='w-full bg-zinc-50 dark:bg-darkbg p-4 rounded-xl border border-zinc-200 dark:border-borderColor text-zinc-900 dark:text-white outline-none focus:border-primary dark:focus:border-primary transition-colors duration-300'
-                                    required
-                                />
-
-                                <textarea
-                                    rows='5'
-                                    name='message'
-                                    placeholder='Message'
-                                    value={formData.message}
-                                    onChange={handleChange}
-                                    className='w-full bg-zinc-50 dark:bg-darkbg p-4 rounded-xl border border-zinc-200 dark:border-borderColor text-zinc-900 dark:text-white outline-none focus:border-primary dark:focus:border-primary transition-colors duration-300 resize-none'
-                                    required
-                                />
-
-                                <button
-                                    type='submit'
-                                    className='w-full bg-primary hover:opacity-90 hover:scale-[1.02] text-white font-semibold py-4 rounded-xl transition-all duration-300 shadow-md active:scale-[0.98]'
+                            {backendAlive ? (
+                                <form
+                                    onSubmit={handleSubmit}
+                                    className='grid gap-5 p-8 md:p-10 pt-6'
                                 >
-                                    Send Message
-                                </button>
-                            </form>
+                                    <input
+                                        ref={nameRef}
+                                        type='text'
+                                        name='name'
+                                        placeholder='Your Name'
+                                        value={formData.name}
+                                        onChange={handleChange}
+                                        className='w-full bg-zinc-50 dark:bg-darkbg p-4 rounded-xl border border-zinc-200 dark:border-borderColor text-zinc-900 dark:text-white outline-none focus:border-primary dark:focus:border-primary transition-colors duration-300'
+                                        required
+                                    />
+                                    <input
+                                        type='email'
+                                        name='email'
+                                        placeholder='Your Email'
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        className='w-full bg-zinc-50 dark:bg-darkbg p-4 rounded-xl border border-zinc-200 dark:border-borderColor text-zinc-900 dark:text-white outline-none focus:border-primary dark:focus:border-primary transition-colors duration-300'
+                                        required
+                                    />
+                                    <input
+                                        type='text'
+                                        name='subject'
+                                        placeholder='Subject'
+                                        value={formData.subject}
+                                        onChange={handleChange}
+                                        className='w-full bg-zinc-50 dark:bg-darkbg p-4 rounded-xl border border-zinc-200 dark:border-borderColor text-zinc-900 dark:text-white outline-none focus:border-primary dark:focus:border-primary transition-colors duration-300'
+                                        required
+                                    />
+                                    <textarea
+                                        rows='5'
+                                        name='message'
+                                        placeholder='Message'
+                                        value={formData.message}
+                                        onChange={handleChange}
+                                        className='w-full bg-zinc-50 dark:bg-darkbg p-4 rounded-xl border border-zinc-200 dark:border-borderColor text-zinc-900 dark:text-white outline-none focus:border-primary dark:focus:border-primary transition-colors duration-300 resize-none'
+                                        required
+                                    />
+                                    <button
+                                        type='submit'
+                                        className='w-full bg-primary hover:opacity-90 hover:scale-[1.02] text-white font-semibold py-4 rounded-xl transition-all duration-300 shadow-md active:scale-[0.98]'
+                                    >
+                                        Send Message
+                                    </button>
+                                </form>
+                            ) : (
+                                <div className='p-8 md:p-10 pt-6 text-center'>
+                                    <div className='w-14 h-14 rounded-2xl bg-zinc-100 dark:bg-darkbg flex items-center justify-center mx-auto mb-4'>
+                                        <svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' className='text-zinc-400'><circle cx='12' cy='12' r='10'/><line x1='12' y1='8' x2='12' y2='12'/><line x1='12' y1='16' x2='12.01' y2='16'/></svg>
+                                    </div>
+                                    <p className='text-zinc-600 dark:text-zinc-300 font-semibold mb-1'>
+                                        Messaging service is unavailable
+                                    </p>
+                                    <p className='text-zinc-400 dark:text-zinc-500 text-sm'>
+                                        Instead of this you can contact me with social media handles
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

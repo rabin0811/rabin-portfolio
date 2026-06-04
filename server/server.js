@@ -24,6 +24,10 @@ const adminRoutes = require('./routes/adminRoutes')
 const galleryRoutes = require('./routes/galleryRoutes')
 const resumeRoutes = require('./routes/resumeRoutes')
 
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' })
+})
+
 app.use('/api/contact', contactRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/blogs', blogRoutes)
