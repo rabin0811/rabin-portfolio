@@ -72,10 +72,10 @@ const Sidebar = () => {
                 </Link>
 
                 <Link
-                    to='/admin/uploads'
+                    to='/admin/resumes'
                     className='bg-zinc-900 hover:bg-zinc-800 px-5 py-3 rounded-xl transition'
                 >
-                    Uploads
+                    Resumes
                 </Link>
 
             </nav>

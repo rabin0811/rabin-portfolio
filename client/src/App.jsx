@@ -21,12 +21,10 @@ import Dashboard from './admin/pages/Dashboard.jsx'
 import AdminLogin from './admin/pages/AdminLogin.jsx'
 import Blogs from './admin/pages/Blogs.jsx'
 import Projects from './admin/pages/Projects.jsx'
-import Uploads from './admin/pages/Uploads.jsx'
 import Resumes from './admin/pages/Resumes.jsx'
 import Gallery from './admin/pages/Gallery.jsx'
 import Messages from './admin/pages/Messages.jsx'
 import Register from './admin/pages/Register.jsx'
-import Profile from './admin/pages/Profile.jsx'
 
 import { Helmet } from 'react-helmet-async'
 import SEO from './components/SEO.jsx'
@@ -39,11 +37,9 @@ const AdminTitle = () => {
     '/admin/blogs': 'Manage Blogs',
     '/admin/projects': 'Manage Projects',
     '/admin/gallery': 'Manage Gallery',
-    '/admin/uploads': 'Upload Center',
     '/admin/resumes': 'Manage Resumes',
     '/admin/messages': 'Messages',
     '/admin/register': 'Register Admin',
-    '/admin/profile': 'Profile',
   }
   const page = Object.keys(titles).find((p) => location.pathname === p) ? Object.keys(titles).find((p) => location.pathname === p) : '/admin'
 
@@ -173,15 +169,6 @@ function App() {
         />
 
         <Route
-          path="/admin/uploads"
-          element={
-            <ProtectedRoute>
-              <Uploads />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
           path="/admin/messages"
           element={
             <ProtectedRoute>
@@ -195,14 +182,6 @@ function App() {
           element={<Register />}
         />
 
-        <Route
-          path="/admin/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
       </Routes>
 
     </>

@@ -21,19 +21,13 @@ const Hero = () => {
 
             try {
 
-                const [profileRes, galleryRes] = await Promise.all([
-                    axios.get(`${API}/api/profile-images/public`),
-                    axios.get(`${API}/api/gallery`),
-                ])
+                const galleryRes = await axios.get(`${API}/api/gallery`)
 
-                const profileImgs = profileRes.data.images || []
                 const galleryImgs = (galleryRes.data.images || []).map(
                     (img) => img.filepath
                 )
 
-                setProfileImages([...profileImgs, ...galleryImgs])
-                setFallbackImage(profileRes.data.fallbackImage)
-                setAdminName(profileRes.data.name || 'Rabin Humagain')
+                setProfileImages(galleryImgs)
 
             } catch (error) {
 
