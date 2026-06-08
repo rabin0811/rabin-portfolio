@@ -1,13 +1,12 @@
 const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const dbUrl = process.env.DATABASE_URL;
-const isSupabase = dbUrl?.includes('supabase.co');
 
 const adapter = new PrismaPg({
     connectionString: dbUrl,
-    ...(isSupabase ? { ssl: { rejectUnauthorized: false } } : {}),
 });
 
 const prisma = new PrismaClient({ adapter });

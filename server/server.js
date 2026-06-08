@@ -3,7 +3,7 @@ const cors = require('cors')
 const dotenv = require('dotenv')
 const path = require('path')
 
-dotenv.config()
+dotenv.config({ path: path.join(__dirname, '.env') })
 
 const app = express()
 
@@ -22,6 +22,7 @@ const analyticsRoutes = require('./routes/analyticsRoutes')
 const visitorRoutes = require('./routes/visitorRoutes')
 const adminRoutes = require('./routes/adminRoutes')
 const galleryRoutes = require('./routes/galleryRoutes')
+const profileImageRoutes = require('./routes/profileImageRoutes')
 const resumeRoutes = require('./routes/resumeRoutes')
 
 app.get('/api/health', (req, res) => {
@@ -37,6 +38,7 @@ app.use('/api/analytics', analyticsRoutes)
 app.use('/api/visitors', visitorRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/gallery', galleryRoutes)
+app.use('/api/profile-images', profileImageRoutes)
 app.use('/api/resume', resumeRoutes)
 
 app.get('/', (req, res) => {

@@ -11,6 +11,10 @@ const AdminLogin = () => {
     const [success, setSuccess] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [formData, setFormData] = useState({ email: '', password: '', name: '' })
+    const [forgotEmail, setForgotEmail] = useState('')
+    const [resetCode, setResetCode] = useState('')
+    const [newPassword, setNewPassword] = useState('')
+    const [codeSent, setCodeSent] = useState(false)
 
     useEffect(() => {
         const init = async () => {
@@ -76,6 +80,65 @@ const AdminLogin = () => {
         }
     }
 
+    const handleForgotPassword = async (e) => {
+        e.preventDefault()
+        setIsLoading(true)
+        setError('')
+        setSuccess('')
+
+        try {
+            const res = await fetch(`${API}/api/auth/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: forgotEmail }),
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                setError(data.message || 'Failed to send code')
+                setIsLoading(false)
+                return
+            }
+            setCodeSent(true)
+            setSuccess('Reset code sent! Check your email.')
+        } catch {
+            setError('Network error. Please try again.')
+        }
+        setIsLoading(false)
+    }
+
+    const handleResetPassword = async (e) => {
+        e.preventDefault()
+        setIsLoading(true)
+        setError('')
+        setSuccess('')
+
+        try {
+            const res = await fetch(`${API}/api/auth/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: forgotEmail, code: resetCode, newPassword }),
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                setError(data.message || 'Reset failed')
+                setIsLoading(false)
+                return
+            }
+            setSuccess('Password reset successfully! Redirecting to login...')
+            setTimeout(() => {
+                setMode('login')
+                setCodeSent(false)
+                setForgotEmail('')
+                setResetCode('')
+                setNewPassword('')
+                setSuccess('')
+            }, 2000)
+        } catch {
+            setError('Network error. Please try again.')
+        }
+        setIsLoading(false)
+    }
+
     const toggleMode = () => {
         setMode((prev) => (prev === 'login' ? 'register' : 'login'))
         setError('')
@@ -104,12 +167,14 @@ const AdminLogin = () => {
                 <div className="p-8 sm:p-10">
                     <div className="text-center mb-8">
                         <h1 className="text-3xl font-bold mb-1">
-                            {isRegister ? 'Register Admin Account' : 'Admin Login'}
+                            {mode === 'forgot' ? 'Reset Password' : isRegister ? 'Register Admin Account' : 'Admin Login'}
                         </h1>
                         <p className="text-zinc-400 text-sm">
-                            {isRegister
-                                ? 'Create the system administrator account'
-                                : 'Sign in to manage your portfolio'}
+                            {mode === 'forgot'
+                                ? codeSent ? 'Enter the code sent to your email' : 'Enter your email to receive a reset code'
+                                : isRegister
+                                    ? 'Create the system administrator account'
+                                    : 'Sign in to manage your portfolio'}
                         </p>
                     </div>
 
@@ -125,9 +190,71 @@ const AdminLogin = () => {
                         </div>
                     )}
 
-                    {showLocked ? (
+                    {mode === 'forgot' ? (
+                        codeSent ? (
+                            <form onSubmit={handleResetPassword} className="flex flex-col gap-4">
+                                <input
+                                    type="text"
+                                    placeholder="6-digit code"
+                                    value={resetCode}
+                                    onChange={(e) => setResetCode(e.target.value)}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3.5 text-white outline-none focus:border-red-500 transition-colors placeholder-zinc-500 text-center text-2xl tracking-[0.5em]"
+                                    required
+                                    maxLength={6}
+                                />
+                                <input
+                                    type="password"
+                                    placeholder="New password (min 6 characters)"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3.5 text-white outline-none focus:border-red-500 transition-colors placeholder-zinc-500"
+                                    required
+                                    minLength={6}
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="w-full bg-red-600 hover:bg-red-500 text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-md active:scale-[0.98] disabled:opacity-50"
+                                >
+                                    {isLoading ? 'Resetting...' : 'Reset Password'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setMode('login'); setCodeSent(false); setError(''); setSuccess('') }}
+                                    className="text-zinc-400 hover:text-white text-sm transition text-center mt-2"
+                                >
+                                    Back to login
+                                </button>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleForgotPassword} className="flex flex-col gap-4">
+                                <input
+                                    type="email"
+                                    placeholder="Email address"
+                                    value={forgotEmail}
+                                    onChange={(e) => setForgotEmail(e.target.value)}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3.5 text-white outline-none focus:border-red-500 transition-colors placeholder-zinc-500"
+                                    required
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="w-full bg-red-600 hover:bg-red-500 text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-md active:scale-[0.98] disabled:opacity-50"
+                                >
+                                    {isLoading ? 'Sending...' : 'Send Reset Code'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setMode('login'); setError(''); setSuccess('') }}
+                                    className="text-zinc-400 hover:text-white text-sm transition text-center mt-2"
+                                >
+                                    Back to login
+                                </button>
+                            </form>
+                        )
+                    ) : showLocked ? (
                         <div className="text-center py-8">
-                            <div className="text-5xl mb-4">🔒</div>
+                            <div className="text-5xl mb-4">&#x1f512;</div>
                             <p className="text-zinc-300 text-sm leading-relaxed px-2">
                                 An admin account is already registered.<br />
                                 Please log in with your admin credentials.
@@ -164,6 +291,15 @@ const AdminLogin = () => {
                                 required
                                 minLength={6}
                             />
+                            {mode === 'login' && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setMode('forgot'); setError(''); setSuccess(''); setForgotEmail(formData.email) }}
+                                    className="text-zinc-400 hover:text-red-400 text-sm text-right transition"
+                                >
+                                    Forgot password?
+                                </button>
+                            )}
                             <button
                                 type="submit"
                                 className="w-full bg-red-600 hover:bg-red-500 text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-md active:scale-[0.98] disabled:opacity-50"
@@ -182,17 +318,19 @@ const AdminLogin = () => {
                     )}
                 </div>
 
-                <div className="border-t border-zinc-800 px-8 sm:px-10 py-4 bg-zinc-950/50">
-                    <p className="text-center text-zinc-400 text-sm">
-                        {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
-                        <button
-                            onClick={toggleMode}
-                            className="text-red-500 hover:text-red-400 font-semibold transition underline underline-offset-2"
-                        >
-                            {isRegister ? 'Admin Login' : 'Register Admin Account'}
-                        </button>
-                    </p>
-                </div>
+                {mode !== 'forgot' && (
+                    <div className="border-t border-zinc-800 px-8 sm:px-10 py-4 bg-zinc-950/50">
+                        <p className="text-center text-zinc-400 text-sm">
+                            {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
+                            <button
+                                onClick={toggleMode}
+                                className="text-red-500 hover:text-red-400 font-semibold transition underline underline-offset-2"
+                            >
+                                {isRegister ? 'Admin Login' : 'Register Admin Account'}
+                            </button>
+                        </p>
+                    </div>
+                )}
 
             </div>
         </div>

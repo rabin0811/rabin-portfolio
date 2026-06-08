@@ -96,6 +96,30 @@ const Projects = () => {
 
     }
 
+    const toggleVisibility = async (id) => {
+
+        try {
+
+            await axios.put(
+                `${API}/api/projects/${id}/toggle`,
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            )
+
+            fetchProjects()
+
+        } catch (error) {
+
+            console.log(error)
+
+        }
+
+    }
+
     const deleteProject = async (id) => {
 
         try {
@@ -225,7 +249,7 @@ const Projects = () => {
                                 {project.description}
                             </p>
 
-                            <div className="flex gap-3">
+                            <div className="flex gap-3 flex-wrap">
 
                                 <a
                                     href={project.github}
@@ -242,6 +266,19 @@ const Projects = () => {
                                 >
                                     Live Demo
                                 </a>
+
+                                <button
+                                    onClick={() =>
+                                        toggleVisibility(project.id)
+                                    }
+                                    className={`px-4 py-2 rounded-xl ${
+                                        project.visible
+                                            ? 'bg-green-700 hover:bg-green-600'
+                                            : 'bg-zinc-700 hover:bg-zinc-600'
+                                    }`}
+                                >
+                                    {project.visible ? 'Visible' : 'Hidden'}
+                                </button>
 
                                 <button
                                     onClick={() =>

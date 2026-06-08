@@ -8,7 +8,8 @@ const prisma = require('../db')
 const {
     uploadResume,
     uploadProjectImage,
-    uploadProfileImage
+    uploadProfileImage,
+    uploadBlogImage
 } = require('../middleware/uploadMiddleware')
 
 /* =========================================
@@ -53,6 +54,31 @@ router.post(
                 success: true,
                 file: req.file.filename,
                 path: `/uploads/projects/${req.file.filename}`,
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(500).json({ message: error.message })
+        }
+    }
+)
+
+/* =========================================
+BLOG IMAGE UPLOAD
+========================================= */
+
+router.post(
+    '/blog-image',
+    protect,
+    uploadBlogImage.single('blogImage'),
+    async (req, res) => {
+        try {
+            if (!req.file) {
+                return res.status(400).json({ message: 'No image uploaded' })
+            }
+            res.status(200).json({
+                success: true,
+                file: req.file.filename,
+                path: `/uploads/blogs/${req.file.filename}`,
             })
         } catch (error) {
             console.log(error)

@@ -8,34 +8,48 @@ const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const Hero = () => {
 
-    const [profileImage, setProfileImage] = useState(null)
+    const [profileImages, setProfileImages] = useState([])
+    const [fallbackImage, setFallbackImage] = useState(null)
+    const [currentIndex, setCurrentIndex] = useState(0)
     const [imageError, setImageError] = useState(false)
     const [adminName, setAdminName] = useState('Rabin Humagain')
     const [hasResume, setHasResume] = useState(false)
 
     useEffect(() => {
 
-        const fetchProfile = async () => {
+        const fetchAll = async () => {
 
             try {
 
-                const res = await axios.get(
-                    `${API}/api/auth/public-profile`
+                const [profileRes, galleryRes] = await Promise.all([
+                    axios.get(`${API}/api/profile-images/public`),
+                    axios.get(`${API}/api/gallery`),
+                ])
+
+                const profileImgs = profileRes.data.images || []
+                const galleryImgs = (galleryRes.data.images || []).map(
+                    (img) => img.filepath
                 )
 
-                if (res.data && res.data.profileImage) {
-                    setProfileImage(`${API}${res.data.profileImage}`)
-                }
-                
-                if (res.data && res.data.name) {
-                    setAdminName(res.data.name)
-                }
+                setProfileImages([...profileImgs, ...galleryImgs])
+                setFallbackImage(profileRes.data.fallbackImage)
+                setAdminName(profileRes.data.name || 'Rabin Humagain')
 
             } catch (error) {
 
                 console.log(error)
-                setImageError(true)
 
+                try {
+                    const fallback = await axios.get(
+                        `${API}/api/auth/public-profile`
+                    )
+                    if (fallback.data && fallback.data.profileImage) {
+                        setFallbackImage(fallback.data.profileImage)
+                    }
+                    if (fallback.data && fallback.data.name) {
+                        setAdminName(fallback.data.name)
+                    }
+                } catch {}
             }
 
         }
@@ -47,10 +61,24 @@ const Hero = () => {
             } catch { setHasResume(false) }
         }
 
-        fetchProfile()
+        fetchAll()
         fetchResume()
 
     }, [])
+
+    useEffect(() => {
+        if (profileImages.length < 2) return
+        const interval = setInterval(() => {
+            setCurrentIndex((prev) => (prev + 1) % profileImages.length)
+        }, 1500)
+        return () => clearInterval(interval)
+    }, [profileImages.length])
+
+    const currentImage = profileImages.length > 0
+        ? `${API}${profileImages[currentIndex]}`
+        : fallbackImage
+            ? `${API}${fallbackImage}`
+            : null
 
     return (
 
@@ -86,11 +114,15 @@ const Hero = () => {
                         '
                     >
 
-                        {profileImage && !imageError ? (
-                            <img
-                                src={profileImage}
+                        {currentImage && !imageError ? (
+                            <motion.img
+                                key={currentImage}
+                                src={currentImage}
                                 alt='Rabin Humagain'
                                 className='w-full h-full object-cover'
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ duration: 0.6 }}
                                 onError={() => setImageError(true)}
                             />
                         ) : (

@@ -7,17 +7,23 @@ datasource db {
 }
 
 model Admin {
-  id             String   @id @default(cuid())
-  email          String   @unique
-  password       String?
-  googleId       String?  @unique
-  name           String?
-  profileImage   String?
-  resumeData     String?
-  resumeName     String?
-  resumeMimeType String?
-  createdAt      DateTime @default(now())
+  id               String    @id @default(cuid())
+  email            String    @unique
+  password         String?
+  googleId         String?   @unique
+  name             String?
+  profileImage     String?
+  resumeData       String?
+  resumeName       String?
+  resumeMimeType   String?
+  resetCode        String?
+  resetCodeExpiry  DateTime?
+  createdAt        DateTime  @default(now())
+
+  profileImages ProfileImage[]
+  resumes       Resume[]
 }
+
 model Project {
   id          Int      @id @default(autoincrement())
   title       String
@@ -25,6 +31,7 @@ model Project {
   image       String
   github      String
   liveDemo    String
+  visible     Boolean  @default(true)
   createdAt   DateTime @default(now())
 }
 
@@ -32,7 +39,7 @@ model Blog {
   id          Int      @id @default(autoincrement())
   title       String
   content     String
-  image       String
+  image       String   @default("")
   category    String
   createdAt   DateTime @default(now())
 }
@@ -53,5 +60,26 @@ model GalleryImage {
   filepath   String
   mimetype   String
   orderIndex Int      @default(0)
+  createdAt  DateTime @default(now())
+}
+
+model ProfileImage {
+  id         Int      @id @default(autoincrement())
+  filename   String
+  filepath   String
+  mimetype   String
+  adminId    String
+  admin      Admin    @relation(fields: [adminId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model Resume {
+  id         Int      @id @default(autoincrement())
+  name       String
+  data       String
+  mimeType   String
+  isActive   Boolean  @default(false)
+  adminId    String
+  admin      Admin    @relation(fields: [adminId], references: [id])
   createdAt  DateTime @default(now())
 }

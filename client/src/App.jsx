@@ -7,7 +7,6 @@ import {
 import Navbar from './components/layout/Navbar.jsx'
 
 import Hero from './components/sections/Hero.jsx'
-import PortfolioSlideshow from './components/sections/PortfolioSlideshow.jsx'
 import About from './components/sections/About.jsx'
 import Certifications from './components/sections/Certifications.jsx'
 import Skills from './components/sections/Skills.jsx'
@@ -23,6 +22,7 @@ import AdminLogin from './admin/pages/AdminLogin.jsx'
 import Blogs from './admin/pages/Blogs.jsx'
 import Projects from './admin/pages/Projects.jsx'
 import Uploads from './admin/pages/Uploads.jsx'
+import Resumes from './admin/pages/Resumes.jsx'
 import Gallery from './admin/pages/Gallery.jsx'
 import Messages from './admin/pages/Messages.jsx'
 import Register from './admin/pages/Register.jsx'
@@ -40,6 +40,7 @@ const AdminTitle = () => {
     '/admin/projects': 'Manage Projects',
     '/admin/gallery': 'Manage Gallery',
     '/admin/uploads': 'Upload Center',
+    '/admin/resumes': 'Manage Resumes',
     '/admin/messages': 'Messages',
     '/admin/register': 'Register Admin',
     '/admin/profile': 'Profile',
@@ -86,8 +87,6 @@ function HomePage() {
       <Navbar />
 
       <Hero />
-
-      <PortfolioSlideshow />
 
       <About />
 
@@ -160,6 +159,15 @@ function App() {
           element={
             <ProtectedRoute>
               <Gallery />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/resumes"
+          element={
+            <ProtectedRoute>
+              <Resumes />
             </ProtectedRoute>
           }
         />

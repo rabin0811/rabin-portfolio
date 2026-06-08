@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 const GITHUB_USER = 'rabin0811'
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const languageColors = {
     JavaScript: '#f1e05a',
@@ -29,33 +30,50 @@ const Projects = () => {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        const fetchRepos = async () => {
+        const fetchAll = async () => {
             try {
-                const res = await fetch(
-                    `https://api.github.com/users/${GITHUB_USER}/repos?sort=updated&per_page=20`
-                )
-                const repos = await res.json()
-                const filtered = repos
-                    .filter((r) => !r.fork && r.name !== GITHUB_USER)
-                    .map((r) => ({
-                        id: r.id,
+                const [githubRes, dbRes] = await Promise.all([
+                    fetch(`https://api.github.com/users/${GITHUB_USER}/repos?sort=updated&per_page=20`),
+                    fetch(`${API}/api/projects/public`),
+                ])
+                const repos = await githubRes.json()
+                const github = Array.isArray(repos)
+                    ? repos.filter((r) => !r.fork && r.name !== GITHUB_USER).map((r) => ({
+                        id: 'gh-' + r.id,
                         name: r.name.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
                         description: r.description || 'No description provided.',
-                        html_url: r.html_url,
+                        url: r.html_url,
                         homepage: r.homepage,
                         language: r.language,
                         topics: r.topics || [],
                         stars: r.stargazers_count,
                         forks: r.forks_count,
-                        updated_at: r.updated_at,
+                        isManual: false,
                     }))
-                setProjects(filtered)
+                    : []
+
+                const dbData = await dbRes.json()
+                const manual = (dbData.projects || []).map((p) => ({
+                    id: 'manual-' + p.id,
+                    name: p.title,
+                    description: p.description,
+                    url: p.github,
+                    homepage: p.liveDemo,
+                    language: null,
+                    topics: [],
+                    stars: 0,
+                    forks: 0,
+                    image: p.image,
+                    isManual: true,
+                }))
+
+                setProjects([...github, ...manual])
             } catch (error) {
                 console.log(error)
             }
             setLoading(false)
         }
-        fetchRepos()
+        fetchAll()
     }, [])
 
     if (loading) return null
@@ -67,32 +85,43 @@ const Projects = () => {
                     Projects
                 </h2>
                 <p className='text-center text-zinc-500 dark:text-zinc-400 mb-16'>
-                    My open-source repositories on{' '}
+                    My work including open-source repositories on{' '}
                     <a href={`https://github.com/${GITHUB_USER}`} target='_blank' rel='noopener noreferrer' className='text-primary hover:underline'>
                         GitHub
                     </a>
                 </p>
 
                 {projects.length === 0 ? (
-                    <p className='text-center text-zinc-500 dark:text-zinc-400'>No repositories found.</p>
+                    <p className='text-center text-zinc-500 dark:text-zinc-400'>No projects found.</p>
                 ) : (
                     <div className='grid md:grid-cols-2 gap-8'>
                         {projects.map((project) => (
                             <div key={project.id} className='group bg-white dark:bg-softdark rounded-3xl overflow-hidden border border-zinc-200 dark:border-borderColor shadow-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(239,68,68,0.25)] hover:border-red-500/40'>
-                                <div className='h-2' style={{ backgroundColor: languageColors[project.language] || '#6b7280' }} />
+                                {project.image && (
+                                    <img
+                                        src={`${API}${project.image}`}
+                                        alt={project.name}
+                                        className='w-full h-48 object-cover'
+                                    />
+                                )}
+                                {!project.image && (
+                                    <div className='h-2' style={{ backgroundColor: languageColors[project.language] || '#6b7280' }} />
+                                )}
                                 <div className='p-8'>
                                     <div className='flex items-center justify-between mb-2'>
                                         <h3 className='text-xl font-bold text-zinc-900 dark:text-white'>
                                             {project.name}
                                         </h3>
-                                        <div className='flex items-center gap-3 text-sm text-zinc-500 dark:text-zinc-400'>
-                                            {project.stars > 0 && (
-                                                <span>★ {project.stars}</span>
-                                            )}
-                                            {project.forks > 0 && (
-                                                <span>⑂ {project.forks}</span>
-                                            )}
-                                        </div>
+                                        {!project.isManual && (
+                                            <div className='flex items-center gap-3 text-sm text-zinc-500 dark:text-zinc-400'>
+                                                {project.stars > 0 && (
+                                                    <span>★ {project.stars}</span>
+                                                )}
+                                                {project.forks > 0 && (
+                                                    <span>⑂ {project.forks}</span>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
 
                                     <p className='text-zinc-600 dark:text-zinc-400 leading-7 text-sm line-clamp-3'>
@@ -120,14 +149,16 @@ const Projects = () => {
                                     </div>
 
                                     <div className='flex gap-3 mt-6 flex-wrap'>
-                                        <a
-                                            href={project.html_url}
-                                            target='_blank'
-                                            rel='noopener noreferrer'
-                                            className='px-5 py-2.5 bg-primary text-white text-sm font-medium rounded-xl hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-md active:scale-95'
-                                        >
-                                            GitHub
-                                        </a>
+                                        {project.url && (
+                                            <a
+                                                href={project.url}
+                                                target='_blank'
+                                                rel='noopener noreferrer'
+                                                className='px-5 py-2.5 bg-primary text-white text-sm font-medium rounded-xl hover:opacity-90 hover:scale-105 transition-all duration-300 shadow-md active:scale-95'
+                                            >
+                                                {project.isManual ? 'GitHub' : 'GitHub'}
+                                            </a>
+                                        )}
                                         {project.homepage && (
                                             <a
                                                 href={project.homepage}

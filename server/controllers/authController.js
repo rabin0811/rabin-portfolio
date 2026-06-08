@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
+const crypto = require('crypto')
+const nodemailer = require('nodemailer')
 const { OAuth2Client } = require('google-auth-library')
 const prisma = require('../db')
 
@@ -226,6 +228,109 @@ const localLogin = async (req, res) => {
     }
 }
 
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' })
+        }
+
+        const admin = await findAdminByEmail(email)
+        if (!admin) {
+            return res.status(404).json({ message: 'No account found with this email' })
+        }
+
+        if (!admin.password) {
+            return res.status(400).json({ message: 'This account uses Google login. Password reset not available.' })
+        }
+
+        const code = Math.floor(100000 + Math.random() * 900000).toString()
+        const expiry = new Date(Date.now() + 15 * 60 * 1000)
+
+        await prisma.admin.update({
+            where: { id: admin.id },
+            data: { resetCode: code, resetCodeExpiry: expiry },
+        })
+
+        const smtpHost = process.env.SMTP_HOST
+        const smtpUser = process.env.SMTP_USER
+        const smtpPass = process.env.SMTP_PASS
+
+        if (smtpHost && smtpUser && smtpPass) {
+            const transporter = nodemailer.createTransport({
+                host: smtpHost,
+                port: Number(process.env.SMTP_PORT) || 587,
+                secure: false,
+                auth: { user: smtpUser, pass: smtpPass },
+            })
+            await transporter.sendMail({
+                from: smtpUser,
+                to: admin.email,
+                subject: 'Password Reset Code - Portfolio Admin',
+                text: `Your password reset code is: ${code}\n\nThis code expires in 15 minutes.\n\nIf you did not request this, please ignore this email.`,
+            })
+        } else {
+            console.log('--- PASSWORD RESET CODE ---')
+            console.log(`Email: ${admin.email}`)
+            console.log(`Code: ${code}`)
+            console.log('Expires: 15 minutes')
+            console.log('--- SMTP not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS in .env for email delivery ---')
+        }
+
+        res.status(200).json({ success: true, message: 'Reset code sent to your email' })
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ message: 'Failed to send reset code' })
+    }
+}
+
+const resetPassword = async (req, res) => {
+    try {
+        const { email, code, newPassword } = req.body
+
+        if (!email || !code || !newPassword) {
+            return res.status(400).json({ message: 'Email, code, and new password are required' })
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: 'Password must be at least 6 characters' })
+        }
+
+        const admin = await findAdminByEmail(email)
+        if (!admin) {
+            return res.status(404).json({ message: 'No account found with this email' })
+        }
+
+        if (!admin.resetCode || !admin.resetCodeExpiry) {
+            return res.status(400).json({ message: 'No reset code requested. Please request a new code.' })
+        }
+
+        if (admin.resetCode !== code) {
+            return res.status(400).json({ message: 'Invalid reset code' })
+        }
+
+        if (new Date() > new Date(admin.resetCodeExpiry)) {
+            return res.status(400).json({ message: 'Reset code has expired. Please request a new code.' })
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 12)
+
+        await prisma.admin.update({
+            where: { id: admin.id },
+            data: {
+                password: hashedPassword,
+                resetCode: null,
+                resetCodeExpiry: null,
+            },
+        })
+
+        res.status(200).json({ success: true, message: 'Password reset successfully. You can now login.' })
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ message: 'Failed to reset password' })
+    }
+}
+
 module.exports = {
     googleLogin,
     googleConfig,
@@ -233,4 +338,6 @@ module.exports = {
     getPublicProfile,
     localRegister,
     localLogin,
+    forgotPassword,
+    resetPassword,
 }
