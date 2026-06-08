@@ -13,6 +13,7 @@ const createAdmin = async (data) => {
         data: {
             email: data.email,
             googleId: data.googleId,
+            password: data.password,
             name: data.name || null,
         },
     })
