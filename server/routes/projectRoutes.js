@@ -12,7 +12,7 @@ const {
     toggleProjectVisibility,
 } = require('../controllers/projectController')
 
-router.get('/', fetchProjects)
+router.get('/', protect, fetchProjects)
 
 router.get('/public', fetchPublicProjects)
 

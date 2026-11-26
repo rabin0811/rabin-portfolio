@@ -3,6 +3,7 @@ const {
     getBlogs,
     deleteBlog,
 } = require('../models/blogModel')
+const sendInternalError = require('../utils/sendInternalError')
 
 const addBlog = async (req, res) => {
 
@@ -28,11 +29,7 @@ const addBlog = async (req, res) => {
         })
 
     } catch (error) {
-
-        res.status(500).json({
-            message: error.message,
-        })
-
+        sendInternalError(res, error, 'Failed to create blog')
     }
 }
 
@@ -48,11 +45,7 @@ const fetchBlogs = async (req, res) => {
         })
 
     } catch (error) {
-
-        res.status(500).json({
-            message: error.message,
-        })
-
+        sendInternalError(res, error, 'Failed to fetch blogs')
     }
 }
 
@@ -68,11 +61,7 @@ const removeBlog = async (req, res) => {
         })
 
     } catch (error) {
-
-        res.status(500).json({
-            message: error.message,
-        })
-
+        sendInternalError(res, error, 'Failed to delete blog')
     }
 }
 

@@ -12,13 +12,14 @@ import {
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Sidebar from '../components/Sidebar'
+import { getAuthToken } from '../authSession'
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 const Dashboard = () => {
     const [stats, setStats] = useState({
         totalBlogs: 0,
         totalProjects: 0,
         totalMessages: 0,
-        visitors: 1200,
+        visitors: 0,
         recentMessages: []
     })
 
@@ -34,7 +35,7 @@ const Dashboard = () => {
             try {
                 const res = await axios.get(`${API}/api/analytics`, {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`
+                        Authorization: `Bearer ${getAuthToken()}`
                     }
                 })
                 setStats(res.data)

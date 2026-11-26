@@ -2,8 +2,14 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import axios from 'axios'
 import Cropper from 'react-easy-crop'
 import AdminLayout from '../layout/AdminLayout'
+import { getAuthToken } from '../authSession'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+const loadGalleryImages = async () => {
+    const res = await axios.get(`${API}/api/gallery`)
+    return res.data.images
+}
 
 const ASPECT_OPTIONS = [
     { label: 'Free', value: undefined },
@@ -56,9 +62,8 @@ const createCroppedImage = async (imageSrc, pixelCrop, rotation = 0) => {
 const Gallery = () => {
     const [admin, setAdmin] = useState(null)
     const [images, setImages] = useState([])
-    const [loading, setLoading] = useState(false)
     const [msg, setMsg] = useState({ text: '', type: '' })
-    const token = localStorage.getItem('token')
+    const token = getAuthToken()
     const inputRef = useRef(null)
 
     const [file, setFile] = useState(null)
@@ -81,27 +86,34 @@ const Gallery = () => {
 
     const fetchImages = async () => {
         try {
-            const res = await axios.get(`${API}/api/gallery`)
-            setImages(res.data.images)
+            setImages(await loadGalleryImages())
         } catch (error) {
             console.log(error)
         }
     }
 
     useEffect(() => {
-        fetchImages()
-        const fetchAdmin = async () => {
-            try {
-                const res = await axios.get(`${API}/api/admin/profile`, {
+        let isActive = true
+        loadGalleryImages()
+            .then((loadedImages) => {
+                if (isActive) setImages(loadedImages)
+            })
+            .catch((error) => console.log(error))
+
+        if (token) {
+            axios.get(`${API}/api/admin/profile`, {
                     headers: { Authorization: `Bearer ${token}` },
                 })
-                setAdmin(res.data)
-            } catch (error) {
-                console.log(error)
-            }
+                .then((res) => {
+                    if (isActive) setAdmin(res.data)
+                })
+                .catch((error) => console.log(error))
         }
-        if (token) fetchAdmin()
-    }, [])
+
+        return () => {
+            isActive = false
+        }
+    }, [token])
 
     const handleFileSelect = (e) => {
         const selected = e.target.files[0]
@@ -153,7 +165,7 @@ const Gallery = () => {
         try {
             const blob = await createCroppedImage(fileUrl, pixelCrop, rotation)
             const formData = new FormData()
-            formData.append('galleryImage', blob, file.name || 'image.jpg')
+            formData.append('galleryImage', blob, 'gallery-image.jpg')
             await axios.post(`${API}/api/gallery/upload`, formData, {
                 headers: { Authorization: `Bearer ${token}` },
             })
@@ -186,7 +198,7 @@ const Gallery = () => {
             })
             showMsg('Image deleted', 'success')
             fetchImages()
-        } catch (error) {
+        } catch {
             showMsg('Delete failed', 'error')
         }
     }

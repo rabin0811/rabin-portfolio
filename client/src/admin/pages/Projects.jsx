@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import AdminLayout from '../layout/AdminLayout'
+import { getAuthToken } from '../authSession'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+const loadProjects = async (token) => {
+    const res = await axios.get(`${API}/api/projects`, {
+        headers: { Authorization: `Bearer ${token}` },
+    })
+    return res.data.projects
+}
 
 const Projects = () => {
 
@@ -17,17 +25,12 @@ const Projects = () => {
 
     const [image, setImage] = useState(null)
 
-    const token = localStorage.getItem('token')
+    const token = getAuthToken()
 
     const fetchProjects = async () => {
 
         try {
-
-            const res = await axios.get(
-                `${API}/api/projects`
-            )
-
-            setProjects(res.data.projects)
+            setProjects(await loadProjects(token))
 
         } catch (error) {
 
@@ -38,8 +41,16 @@ const Projects = () => {
     }
 
     useEffect(() => {
-        fetchProjects()
-    }, [])
+        let isActive = true
+        loadProjects(token)
+            .then((loadedProjects) => {
+                if (isActive) setProjects(loadedProjects)
+            })
+            .catch((error) => console.log(error))
+        return () => {
+            isActive = false
+        }
+    }, [token])
 
     const uploadImage = async () => {
 

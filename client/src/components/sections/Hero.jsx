@@ -43,7 +43,9 @@ const Hero = () => {
                     if (fallback.data && fallback.data.name) {
                         setAdminName(fallback.data.name)
                     }
-                } catch {}
+                } catch (error) {
+                    console.error('Failed to load the public profile fallback', error)
+                }
             }
 
         }

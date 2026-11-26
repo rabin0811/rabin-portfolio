@@ -6,6 +6,8 @@ const Contact = () => {
     const nameRef = useRef(null)
     const [showForm, setShowForm] = useState(false)
     const [backendAlive, setBackendAlive] = useState(true)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [submissionStatus, setSubmissionStatus] = useState({ type: '', message: '' })
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -32,6 +34,21 @@ const Contact = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+        const submission = Object.fromEntries(
+            Object.entries(formData).map(([field, value]) => [field, value.trim()])
+        )
+
+        if (Object.values(submission).some((value) => !value)) {
+            setSubmissionStatus({
+                type: 'error',
+                message: 'Please complete every field.',
+            })
+            return
+        }
+
+        setIsSubmitting(true)
+        setSubmissionStatus({ type: '', message: '' })
+
         try {
             const response = await fetch(
                 `${apiUrl}/api/contact`,
@@ -40,22 +57,37 @@ const Contact = () => {
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(submission)
                 }
             )
 
             const data = await response.json()
-            alert(data.message)
+            if (!response.ok) {
+                setSubmissionStatus({
+                    type: 'error',
+                    message: data.message || 'Failed to send your message.',
+                })
+                return
+            }
 
+            setSubmissionStatus({
+                type: 'success',
+                message: data.message || 'Message sent successfully.',
+            })
             setFormData({
                 name: '',
                 email: '',
                 subject: '',
                 message: ''
             })
-
         } catch (error) {
-            console.log(error)
+            console.error('Failed to send contact message', error)
+            setSubmissionStatus({
+                type: 'error',
+                message: 'Unable to send your message. Please try again.',
+            })
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -76,11 +108,7 @@ const Contact = () => {
                     Contact Me
                 </h1>
 
-                <div
-                    className='max-w-3xl mx-auto'
-                    onMouseEnter={() => setShowForm(true)}
-                    onMouseLeave={() => setShowForm(false)}
-                >
+                <div className='max-w-3xl mx-auto'>
                     <div className='bg-white dark:bg-softdark border border-zinc-200 dark:border-borderColor rounded-3xl shadow-sm transition-all duration-500 hover:shadow-lg hover:shadow-red-900/10 dark:hover:shadow-red-900/5 hover:border-red-300 dark:hover:border-red-800'>
                         {/* HEADER */}
                         <div className='flex items-center gap-5 p-8 md:p-10'>
@@ -91,14 +119,23 @@ const Contact = () => {
                                 <h3 className='text-xl font-bold text-zinc-900 dark:text-white'>
                                     Get in Touch
                                 </h3>
-                                <p className='text-zinc-500 dark:text-zinc-400 text-sm mt-0.5'>
-                                    Hover to send me a message
-                                </p>
+                                <button
+                                    type='button'
+                                    aria-expanded={showForm}
+                                    aria-controls='contact-form-panel'
+                                    onClick={() => setShowForm((visible) => !visible)}
+                                    className='text-zinc-500 dark:text-zinc-400 text-sm mt-0.5 text-left hover:text-primary transition-colors'
+                                >
+                                    {showForm ? 'Hide message form' : 'Click or tap to send me a message'}
+                                </button>
                             </div>
                         </div>
 
                         {/* FORM / UNAVAILABLE */}
                         <div
+                            id='contact-form-panel'
+                            aria-hidden={!showForm}
+                            inert={!showForm}
                             className={`overflow-hidden transition-all duration-500 ease-out ${
                                 showForm ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
                             }`}
@@ -109,6 +146,16 @@ const Contact = () => {
                                     onSubmit={handleSubmit}
                                     className='grid gap-5 p-8 md:p-10 pt-6'
                                 >
+                                    {submissionStatus.message && (
+                                        <p
+                                            role={submissionStatus.type === 'error' ? 'alert' : 'status'}
+                                            className={submissionStatus.type === 'error'
+                                                ? 'text-red-600 dark:text-red-400 text-sm'
+                                                : 'text-green-700 dark:text-green-400 text-sm'}
+                                        >
+                                            {submissionStatus.message}
+                                        </p>
+                                    )}
                                     <input
                                         ref={nameRef}
                                         type='text'
@@ -148,9 +195,10 @@ const Contact = () => {
                                     />
                                     <button
                                         type='submit'
+                                        disabled={isSubmitting}
                                         className='w-full bg-primary hover:opacity-90 hover:scale-[1.02] text-white font-semibold py-4 rounded-xl transition-all duration-300 shadow-md active:scale-[0.98]'
                                     >
-                                        Send Message
+                                        {isSubmitting ? 'Sending...' : 'Send Message'}
                                     </button>
                                 </form>
                             ) : (

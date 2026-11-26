@@ -1,3 +1,4 @@
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import {
   Routes,
   Route,
@@ -16,18 +17,24 @@ import Contact from './components/sections/Contact.jsx'
 import Footer from './components/sections/Footer.jsx'
 
 import ProtectedRoute from './admin/components/ProtectedRoute.jsx'
-
-import Dashboard from './admin/pages/Dashboard.jsx'
-import AdminLogin from './admin/pages/AdminLogin.jsx'
-import Blogs from './admin/pages/Blogs.jsx'
-import Projects from './admin/pages/Projects.jsx'
-import Resumes from './admin/pages/Resumes.jsx'
-import Gallery from './admin/pages/Gallery.jsx'
-import Messages from './admin/pages/Messages.jsx'
-import Register from './admin/pages/Register.jsx'
+import { clearAuthToken } from './admin/authSession.js'
 
 import { Helmet } from 'react-helmet-async'
 import SEO from './components/SEO.jsx'
+
+const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://humagainrabin.com.np'
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const VISITOR_SESSION_KEY = 'portfolio-visitor-counted'
+let visitorTrackingStarted = false
+
+const Dashboard = lazy(() => import('./admin/pages/Dashboard.jsx'))
+const AdminLogin = lazy(() => import('./admin/pages/AdminLogin.jsx'))
+const Blogs = lazy(() => import('./admin/pages/Blogs.jsx'))
+const Projects = lazy(() => import('./admin/pages/Projects.jsx'))
+const Resumes = lazy(() => import('./admin/pages/Resumes.jsx'))
+const Gallery = lazy(() => import('./admin/pages/Gallery.jsx'))
+const Messages = lazy(() => import('./admin/pages/Messages.jsx'))
+const Register = lazy(() => import('./admin/pages/Register.jsx'))
 
 const AdminTitle = () => {
   const location = useLocation()
@@ -51,7 +58,46 @@ const AdminTitle = () => {
   )
 }
 
+const isAdminPath = (pathname) => pathname === '/admin' || pathname.startsWith('/admin/')
+
+const AdminSessionBoundary = () => {
+  const { pathname } = useLocation()
+  const previousPath = useRef(pathname)
+
+  useEffect(() => {
+    if (isAdminPath(previousPath.current) && !isAdminPath(pathname)) {
+      clearAuthToken()
+    }
+    previousPath.current = pathname
+  }, [pathname])
+
+  return null
+}
+
 function HomePage() {
+  useEffect(() => {
+    if (visitorTrackingStarted) return
+    visitorTrackingStarted = true
+
+    try {
+      if (window.sessionStorage.getItem(VISITOR_SESSION_KEY)) return
+    } catch (error) {
+      console.warn('Unable to access session storage for visitor tracking', error)
+    }
+
+    fetch(`${API}/api/visitors`, { method: 'POST', keepalive: true })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Visitor tracking failed with status ${response.status}`)
+        }
+        try {
+          window.sessionStorage.setItem(VISITOR_SESSION_KEY, 'true')
+        } catch (error) {
+          console.warn('Unable to save visitor tracking session', error)
+        }
+      })
+      .catch((error) => console.error('Failed to record visitor count', error))
+  }, [])
 
   return (
 
@@ -62,13 +108,13 @@ function HomePage() {
         description="Modern portfolio website of Rabin Humagain. Full stack developer, backend enthusiast, React developer, Node.js developer, and computer engineering student from Nepal."
         keywords="Rabin Humagain, Full Stack Developer, React Developer, Node Developer, Portfolio Website, Backend Enthusiast, Nepal"
         image="/profile.jpeg"
-        url="https://rabin-portfolio.vercel.app"
+        url={SITE_URL}
         schema={{
             '@context': 'https://schema.org',
             '@type': 'Person',
             name: 'Rabin Humagain',
-            url: 'https://rabin-portfolio.vercel.app',
-            image: 'https://rabin-portfolio.vercel.app/profile.jpeg',
+            url: SITE_URL,
+            image: new URL('/profile.jpeg', SITE_URL).toString(),
             jobTitle: 'Full Stack Developer',
             description: 'Computer Engineering Student and Full Stack Developer',
             sameAs: [
@@ -109,80 +155,84 @@ function App() {
 
     <>
 
+      <AdminSessionBoundary />
+
       <AdminTitle />
 
-      <Routes>
+      <Suspense fallback={<div className="p-6 text-center">Loading page...</div>}>
+        <Routes>
 
-        <Route
-          path="/"
-          element={<HomePage />}
-        />
+          <Route
+            path="/"
+            element={<HomePage />}
+          />
 
-        <Route
-          path="/admin"
-          element={<AdminLogin />}
-        />
+          <Route
+            path="/admin"
+            element={<AdminLogin />}
+          />
 
-        <Route
-          path="/admin/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/admin/blogs"
-          element={
-            <ProtectedRoute>
-              <Blogs />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/admin/blogs"
+            element={
+              <ProtectedRoute>
+                <Blogs />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/admin/projects"
-          element={
-            <ProtectedRoute>
-              <Projects />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/admin/projects"
+            element={
+              <ProtectedRoute>
+                <Projects />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/admin/gallery"
-          element={
-            <ProtectedRoute>
-              <Gallery />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/admin/gallery"
+            element={
+              <ProtectedRoute>
+                <Gallery />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/admin/resumes"
-          element={
-            <ProtectedRoute>
-              <Resumes />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/admin/resumes"
+            element={
+              <ProtectedRoute>
+                <Resumes />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/admin/messages"
-          element={
-            <ProtectedRoute>
-              <Messages />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/admin/messages"
+            element={
+              <ProtectedRoute>
+                <Messages />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/admin/register"
-          element={<Register />}
-        />
+          <Route
+            path="/admin/register"
+            element={<Register />}
+          />
 
-      </Routes>
+        </Routes>
+      </Suspense>
 
     </>
 

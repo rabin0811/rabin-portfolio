@@ -1,220 +1,122 @@
+const fs = require('fs')
 const multer = require('multer')
-
 const path = require('path')
+const { createR2Storage, isR2Enabled } = require('../storage')
+const { createValidatedStorage } = require('./validatedUploadStorage')
 
-/* =========================================
-   RESUME STORAGE
-========================================= */
+const uploadRoot = path.join(__dirname, '../uploads')
+const maxFileSize = 10 * 1024 * 1024
 
-const resumeStorage = multer.diskStorage({
-
-    destination: (req, file, cb) => {
-
-        cb(null, 'uploads/resume')
-
-    },
-
-    filename: (req, file, cb) => {
-
-        cb(null, 'resume.pdf')
-
+const createStorage = (category, getFilename) => {
+    if (isR2Enabled) {
+        return createValidatedStorage(createR2Storage(category, getFilename))
     }
 
-})
+    return createValidatedStorage(multer.diskStorage({
+        destination: (req, file, cb) => {
+            const directory = path.join(uploadRoot, category)
+            fs.mkdir(directory, { recursive: true }, (error) => cb(error, directory))
+        },
+        filename: (req, file, cb) => cb(null, getFilename(file)),
+    }))
+}
 
-/* =========================================
-   PROJECT IMAGE STORAGE
-========================================= */
+const uniqueFilename = (file, separator = '-') => (
+    `${Date.now()}${separator}${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`
+)
 
-const imageStorage = multer.diskStorage({
+const createUploadError = (message) => {
+    const error = new Error(message)
+    error.code = 'INVALID_UPLOAD_CONTENT'
+    return error
+}
 
-    destination: (req, file, cb) => {
+const withSafeUploadErrors = (uploader) => ({
+    single(fieldName) {
+        const middleware = uploader.single(fieldName)
+        return (req, res, next) => {
+            middleware(req, res, (error) => {
+                if (!error) {
+                    return next()
+                }
 
-        cb(null, 'uploads/projects')
+                if (error.name === 'MulterError') {
+                    const isTooLarge = error.code === 'LIMIT_FILE_SIZE'
+                    return res.status(isTooLarge ? 413 : 400).json({
+                        message: isTooLarge
+                            ? 'Uploaded file exceeds the 10 MiB size limit'
+                            : 'Invalid upload request',
+                    })
+                }
 
+                if (error.code === 'INVALID_UPLOAD_CONTENT') {
+                    return res.status(400).json({ message: 'File type, content, or extension is not allowed' })
+                }
+
+                next(error)
+            })
+        }
     },
-
-    filename: (req, file, cb) => {
-
-        const uniqueName =
-            Date.now() + path.extname(file.originalname)
-
-        cb(null, uniqueName)
-
-    }
-
 })
-
-/* =========================================
-   PROFILE IMAGE STORAGE
-========================================= */
-
-const profileStorage = multer.diskStorage({
-
-    destination: (req, file, cb) => {
-
-        cb(null, 'uploads/profile')
-
-    },
-
-    filename: (req, file, cb) => {
-
-        cb(
-            null,
-            'profile' + path.extname(file.originalname)
-        )
-
-    }
-
-})
-
-/* =========================================
-   BLOG IMAGE STORAGE
-========================================= */
-
-const blogStorage = multer.diskStorage({
-
-    destination: (req, file, cb) => {
-
-        cb(null, 'uploads/blogs')
-
-    },
-
-    filename: (req, file, cb) => {
-
-        const uniqueName =
-            Date.now() + '-' + Math.round(Math.random() * 1e9) + path.extname(file.originalname)
-
-        cb(null, uniqueName)
-
-    }
-
-})
-
-/* =========================================
-   GALLERY IMAGE STORAGE
-========================================= */
-
-const galleryStorage = multer.diskStorage({
-
-    destination: (req, file, cb) => {
-
-        cb(null, 'uploads/gallery')
-
-    },
-
-    filename: (req, file, cb) => {
-
-        const uniqueName =
-            Date.now() + '-' + Math.round(Math.random() * 1e9) + path.extname(file.originalname)
-
-        cb(null, uniqueName)
-
-    }
-
-})
-
-/* =========================================
-   FILE FILTERS
-========================================= */
 
 const imageFilter = (req, file, cb) => {
-
     const allowedTypes = [
         'image/png',
         'image/jpeg',
         'image/jpg',
         'image/webp',
         'image/gif',
-        'image/svg+xml'
     ]
 
     if (allowedTypes.includes(file.mimetype)) {
-
         cb(null, true)
-
     } else {
-
-        cb(
-            new Error('Only image files are allowed'),
-            false
-        )
-
+        cb(createUploadError('Only PNG, JPEG, WebP, or GIF images are allowed'), false)
     }
-
 }
 
 const pdfFilter = (req, file, cb) => {
-
     if (file.mimetype === 'application/pdf') {
-
         cb(null, true)
-
     } else {
-
-        cb(
-            new Error('Only PDF files are allowed'),
-            false
-        )
-
+        cb(createUploadError('Only PDF files are allowed'), false)
     }
-
 }
 
-/* =========================================
-   MULTER EXPORTS
-========================================= */
+const uploadResume = withSafeUploadErrors(multer({
+    storage: createStorage('resume', () => 'resume.pdf'),
+    limits: { fileSize: maxFileSize },
+    fileFilter: pdfFilter,
+}))
 
-const uploadResume = multer({
+const uploadProjectImage = withSafeUploadErrors(multer({
+    storage: createStorage('projects', (file) => uniqueFilename(file, '')),
+    limits: { fileSize: maxFileSize },
+    fileFilter: imageFilter,
+}))
 
-    storage: resumeStorage,
+const uploadProfileImage = withSafeUploadErrors(multer({
+    storage: createStorage('profile', (file) => `profile${path.extname(file.originalname)}`),
+    limits: { fileSize: maxFileSize },
+    fileFilter: imageFilter,
+}))
 
-    fileFilter: pdfFilter
+const uploadBlogImage = withSafeUploadErrors(multer({
+    storage: createStorage('blogs', uniqueFilename),
+    limits: { fileSize: maxFileSize },
+    fileFilter: imageFilter,
+}))
 
-})
-
-const uploadProjectImage = multer({
-
-    storage: imageStorage,
-
-    fileFilter: imageFilter
-
-})
-
-const uploadProfileImage = multer({
-
-    storage: profileStorage,
-
-    fileFilter: imageFilter
-
-})
-
-const uploadBlogImage = multer({
-
-    storage: blogStorage,
-
-    fileFilter: imageFilter
-
-})
-
-const uploadGalleryImage = multer({
-
-    storage: galleryStorage,
-
-    fileFilter: imageFilter
-
-})
+const uploadGalleryImage = withSafeUploadErrors(multer({
+    storage: createStorage('gallery', uniqueFilename),
+    limits: { fileSize: maxFileSize },
+    fileFilter: imageFilter,
+}))
 
 module.exports = {
-
     uploadResume,
-
     uploadProjectImage,
-
     uploadProfileImage,
-
     uploadBlogImage,
-
-    uploadGalleryImage
-
+    uploadGalleryImage,
 }

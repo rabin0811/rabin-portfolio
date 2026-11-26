@@ -4,6 +4,7 @@ const crypto = require('crypto')
 const nodemailer = require('nodemailer')
 const { OAuth2Client } = require('google-auth-library')
 const prisma = require('../db')
+const sendInternalError = require('../utils/sendInternalError')
 
 const {
     findAdminByEmail,
@@ -48,7 +49,6 @@ const googleLogin = async (req, res) => {
         }
 
         const admin = await findAdminByEmail(email)
-        const adminCount = await countAdmins()
 
         /* Flow C: Auto-Link — email matches existing admin, link googleId */
         if (admin) {
@@ -67,36 +67,12 @@ const googleLogin = async (req, res) => {
             })
         }
 
-        /* Flow B: Admin exists, email doesn't match — block */
-        if (adminCount >= 1) {
-            return res.status(403).json({
-                message: 'An admin account is already registered. Please log in with your admin credentials.',
-            })
-        }
-
-        /* Flow A: No admin exists — create as system admin */
-        const newAdmin = await createAdmin({
-            email,
-            googleId,
-        })
-
-        const token = jwt.sign(
-            { id: newAdmin.id },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
-        )
-
-        return res.status(201).json({
-            success: true,
-            token,
-            admin: { id: newAdmin.id, email: newAdmin.email },
+        return res.status(403).json({
+            message: 'Google sign-in is available after initial administrator setup.',
         })
 
     } catch (error) {
-        console.log(error)
-        res.status(500).json({
-            message: 'Google authentication failed. Please try again.',
-        })
+        sendInternalError(res, error, 'Google authentication failed', 'Google authentication failed. Please try again.')
     }
 }
 
@@ -108,7 +84,7 @@ const googleConfig = async (req, res) => {
             clientId: clientId || null,
         })
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        sendInternalError(res, error, 'Failed to read Google login configuration')
     }
 }
 
@@ -119,7 +95,7 @@ const checkAdminExists = async (req, res) => {
             exists: adminCount > 0,
         })
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        sendInternalError(res, error, 'Failed to check administrator setup')
     }
 }
 
@@ -134,13 +110,13 @@ const getPublicProfile = async (req, res) => {
             res.status(404).json({ message: 'No admin found' })
         }
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        sendInternalError(res, error, 'Failed to fetch public administrator profile')
     }
 }
 
 const localRegister = async (req, res) => {
     try {
-        const { email, password, name } = req.body
+        const { email, password, name, setupKey } = req.body
 
         if (!email || !password) {
             return res.status(400).json({ message: 'Email and password are required' })
@@ -148,6 +124,21 @@ const localRegister = async (req, res) => {
 
         if (password.length < 6) {
             return res.status(400).json({ message: 'Password must be at least 6 characters' })
+        }
+
+        const expectedSetupKey = process.env.ADMIN_SETUP_KEY
+        if (!expectedSetupKey || Buffer.byteLength(expectedSetupKey) < 32) {
+            return res.status(503).json({ message: 'Initial administrator setup is not configured' })
+        }
+
+        if (typeof setupKey !== 'string' || !setupKey) {
+            return res.status(403).json({ message: 'Invalid administrator setup credentials' })
+        }
+
+        const suppliedKeyHash = crypto.createHash('sha256').update(setupKey).digest()
+        const expectedKeyHash = crypto.createHash('sha256').update(expectedSetupKey).digest()
+        if (!crypto.timingSafeEqual(suppliedKeyHash, expectedKeyHash)) {
+            return res.status(403).json({ message: 'Invalid administrator setup credentials' })
         }
 
         const adminCount = await countAdmins()
@@ -182,8 +173,7 @@ const localRegister = async (req, res) => {
             admin: { id: admin.id, email: admin.email },
         })
     } catch (error) {
-        console.log(error)
-        res.status(500).json({ message: 'Registration failed' })
+        sendInternalError(res, error, 'Administrator registration failed', 'Registration failed')
     }
 }
 
@@ -223,8 +213,7 @@ const localLogin = async (req, res) => {
             admin: { id: admin.id, email: admin.email, name: admin.name },
         })
     } catch (error) {
-        console.log(error)
-        res.status(500).json({ message: 'Login failed' })
+        sendInternalError(res, error, 'Administrator login failed', 'Login failed')
     }
 }
 
@@ -235,52 +224,50 @@ const forgotPassword = async (req, res) => {
             return res.status(400).json({ message: 'Email is required' })
         }
 
-        const admin = await findAdminByEmail(email)
-        if (!admin) {
-            return res.status(404).json({ message: 'No account found with this email' })
-        }
-
-        if (!admin.password) {
-            return res.status(400).json({ message: 'This account uses Google login. Password reset not available.' })
-        }
-
-        const code = Math.floor(100000 + Math.random() * 900000).toString()
-        const expiry = new Date(Date.now() + 15 * 60 * 1000)
-
-        await prisma.admin.update({
-            where: { id: admin.id },
-            data: { resetCode: code, resetCodeExpiry: expiry },
-        })
-
         const smtpHost = process.env.SMTP_HOST
         const smtpUser = process.env.SMTP_USER
         const smtpPass = process.env.SMTP_PASS
 
-        if (smtpHost && smtpUser && smtpPass) {
-            const transporter = nodemailer.createTransport({
-                host: smtpHost,
-                port: Number(process.env.SMTP_PORT) || 587,
-                secure: false,
-                auth: { user: smtpUser, pass: smtpPass },
-            })
-            await transporter.sendMail({
-                from: smtpUser,
-                to: admin.email,
-                subject: 'Password Reset Code - Portfolio Admin',
-                text: `Your password reset code is: ${code}\n\nThis code expires in 15 minutes.\n\nIf you did not request this, please ignore this email.`,
-            })
-        } else {
-            console.log('--- PASSWORD RESET CODE ---')
-            console.log(`Email: ${admin.email}`)
-            console.log(`Code: ${code}`)
-            console.log('Expires: 15 minutes')
-            console.log('--- SMTP not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS in .env for email delivery ---')
+        if (!smtpHost || !smtpUser || !smtpPass) {
+            return res.status(503).json({ message: 'Password reset is temporarily unavailable' })
         }
 
-        res.status(200).json({ success: true, message: 'Reset code sent to your email' })
+        const admin = await findAdminByEmail(email)
+        if (!admin || !admin.password) {
+            return res.status(200).json({
+                success: true,
+                message: 'If an account exists for this email, reset instructions have been sent.',
+            })
+        }
+
+        const code = crypto.randomBytes(32).toString('hex')
+        const resetCodeHash = crypto.createHash('sha256').update(code).digest('hex')
+        const expiry = new Date(Date.now() + 15 * 60 * 1000)
+
+        await prisma.admin.update({
+            where: { id: admin.id },
+            data: { resetCode: resetCodeHash, resetCodeExpiry: expiry },
+        })
+
+        const transporter = nodemailer.createTransport({
+            host: smtpHost,
+            port: Number(process.env.SMTP_PORT) || 587,
+            secure: false,
+            auth: { user: smtpUser, pass: smtpPass },
+        })
+        await transporter.sendMail({
+            from: smtpUser,
+            to: admin.email,
+            subject: 'Password Reset Token - Portfolio Admin',
+            text: `Your password reset token is: ${code}\n\nThis token expires in 15 minutes.\n\nIf you did not request this, please ignore this email.`,
+        })
+
+        res.status(200).json({
+            success: true,
+            message: 'If an account exists for this email, reset instructions have been sent.',
+        })
     } catch (error) {
-        console.log(error)
-        res.status(500).json({ message: 'Failed to send reset code' })
+        sendInternalError(res, error, 'Failed to send password reset token', 'Failed to send reset instructions')
     }
 }
 
@@ -288,8 +275,20 @@ const resetPassword = async (req, res) => {
     try {
         const { email, code, newPassword } = req.body
 
-        if (!email || !code || !newPassword) {
+        if (
+            typeof email !== 'string'
+            || typeof code !== 'string'
+            || typeof newPassword !== 'string'
+            || !email
+            || !code
+            || !newPassword
+        ) {
             return res.status(400).json({ message: 'Email, code, and new password are required' })
+        }
+
+        const token = code.trim()
+        if (!/^[a-f0-9]{64}$/i.test(token)) {
+            return res.status(400).json({ message: 'Invalid or expired reset token' })
         }
 
         if (newPassword.length < 6) {
@@ -298,25 +297,34 @@ const resetPassword = async (req, res) => {
 
         const admin = await findAdminByEmail(email)
         if (!admin) {
-            return res.status(404).json({ message: 'No account found with this email' })
+            return res.status(400).json({ message: 'Invalid or expired reset token' })
         }
 
         if (!admin.resetCode || !admin.resetCodeExpiry) {
-            return res.status(400).json({ message: 'No reset code requested. Please request a new code.' })
+            return res.status(400).json({ message: 'Invalid or expired reset token' })
         }
 
-        if (admin.resetCode !== code) {
-            return res.status(400).json({ message: 'Invalid reset code' })
+        if (Date.now() >= new Date(admin.resetCodeExpiry).getTime()) {
+            return res.status(400).json({ message: 'Invalid or expired reset token' })
         }
 
-        if (new Date() > new Date(admin.resetCodeExpiry)) {
-            return res.status(400).json({ message: 'Reset code has expired. Please request a new code.' })
+        const submittedHash = crypto.createHash('sha256').update(token).digest()
+        const storedHash = Buffer.from(admin.resetCode, 'hex')
+        if (
+            storedHash.length !== submittedHash.length
+            || !crypto.timingSafeEqual(storedHash, submittedHash)
+        ) {
+            return res.status(400).json({ message: 'Invalid or expired reset token' })
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 12)
 
-        await prisma.admin.update({
-            where: { id: admin.id },
+        const result = await prisma.admin.updateMany({
+            where: {
+                id: admin.id,
+                resetCode: admin.resetCode,
+                resetCodeExpiry: { gt: new Date() },
+            },
             data: {
                 password: hashedPassword,
                 resetCode: null,
@@ -324,10 +332,13 @@ const resetPassword = async (req, res) => {
             },
         })
 
+        if (result.count !== 1) {
+            return res.status(400).json({ message: 'Invalid or expired reset token' })
+        }
+
         res.status(200).json({ success: true, message: 'Password reset successfully. You can now login.' })
     } catch (error) {
-        console.log(error)
-        res.status(500).json({ message: 'Failed to reset password' })
+        sendInternalError(res, error, 'Password reset failed', 'Failed to reset password')
     }
 }
 

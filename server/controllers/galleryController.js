@@ -5,8 +5,8 @@ const {
     updateOrder,
 } = require('../models/galleryModel')
 
-const fs = require('fs')
-const path = require('path')
+const { deleteStoredFile } = require('../storage')
+const sendInternalError = require('../utils/sendInternalError')
 
 const addImage = async (req, res) => {
     try {
@@ -22,8 +22,7 @@ const addImage = async (req, res) => {
 
         res.status(201).json({ success: true, image })
     } catch (error) {
-        console.log(error)
-        res.status(500).json({ message: error.message })
+        sendInternalError(res, error, 'Failed to add gallery image')
     }
 }
 
@@ -32,26 +31,18 @@ const fetchImages = async (req, res) => {
         const images = await getImages()
         res.status(200).json({ success: true, images })
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        sendInternalError(res, error, 'Failed to fetch gallery images')
     }
 }
 
 const removeImage = async (req, res) => {
     try {
         const image = await deleteImage(req.params.id)
-
-        const filePath = path.join(
-            __dirname,
-            '../uploads/gallery',
-            image.filename
-        )
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath)
-        }
+        await deleteStoredFile('gallery', image.filename)
 
         res.status(200).json({ success: true, message: 'Image deleted' })
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        sendInternalError(res, error, 'Failed to remove gallery image')
     }
 }
 
@@ -64,7 +55,7 @@ const reorderImages = async (req, res) => {
         await updateOrder(orderedIds)
         res.status(200).json({ success: true, message: 'Order updated' })
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        sendInternalError(res, error, 'Failed to reorder gallery images')
     }
 }
 

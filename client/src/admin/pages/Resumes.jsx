@@ -1,28 +1,44 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import AdminLayout from '../layout/AdminLayout'
+import { getAuthToken } from '../authSession'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+const loadResumes = async (token) => {
+    const res = await axios.get(`${API}/api/resume/list`, {
+        headers: { Authorization: `Bearer ${token}` },
+    })
+    return res.data.resumes
+}
 
 const Resumes = () => {
 
     const [resumes, setResumes] = useState([])
     const [file, setFile] = useState(null)
     const [loading, setLoading] = useState(false)
-    const token = localStorage.getItem('token')
+    const token = getAuthToken()
 
     const fetchResumes = async () => {
         try {
-            const res = await axios.get(`${API}/api/resume/list`, {
-                headers: { Authorization: `Bearer ${token}` },
-            })
-            setResumes(res.data.resumes)
+            setResumes(await loadResumes(token))
         } catch (error) {
             console.log(error)
         }
     }
 
-    useEffect(() => { fetchResumes() }, [])
+    useEffect(() => {
+        let isActive = true
+        loadResumes(token)
+            .then((loadedResumes) => {
+                if (isActive) setResumes(loadedResumes)
+            })
+            .catch((error) => console.log(error))
+
+        return () => {
+            isActive = false
+        }
+    }, [token])
 
     const handleUpload = async (e) => {
         e.preventDefault()

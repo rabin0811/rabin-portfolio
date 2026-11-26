@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import AdminLayout from '../layout/AdminLayout'
+import { getAuthToken } from '../authSession'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+const loadBlogs = async () => {
+    const res = await axios.get(`${API}/api/blogs`)
+    return res.data.blogs
+}
 
 const Blogs = () => {
 
@@ -16,17 +22,12 @@ const Blogs = () => {
 
     const [image, setImage] = useState(null)
 
-    const token = localStorage.getItem('token')
+    const token = getAuthToken()
 
     const fetchBlogs = async () => {
 
         try {
-
-            const res = await axios.get(
-                `${API}/api/blogs`
-            )
-
-            setBlogs(res.data.blogs)
+            setBlogs(await loadBlogs())
 
         } catch (error) {
 
@@ -37,7 +38,15 @@ const Blogs = () => {
     }
 
     useEffect(() => {
-        fetchBlogs()
+        let isActive = true
+        loadBlogs()
+            .then((loadedBlogs) => {
+                if (isActive) setBlogs(loadedBlogs)
+            })
+            .catch((error) => console.log(error))
+        return () => {
+            isActive = false
+        }
     }, [])
 
     const uploadImage = async () => {

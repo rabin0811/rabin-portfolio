@@ -1,4 +1,5 @@
 const prisma = require('../db')
+const sendInternalError = require('../utils/sendInternalError')
 
 const addProject = async (req, res) => {
 
@@ -22,11 +23,7 @@ const addProject = async (req, res) => {
         })
 
     } catch (error) {
-
-        res.status(500).json({
-            message: error.message,
-        })
-
+        sendInternalError(res, error, 'Failed to create project')
     }
 }
 
@@ -42,11 +39,7 @@ const fetchProjects = async (req, res) => {
         })
 
     } catch (error) {
-
-        res.status(500).json({
-            message: error.message,
-        })
-
+        sendInternalError(res, error, 'Failed to fetch projects')
     }
 }
 
@@ -65,11 +58,7 @@ const fetchPublicProjects = async (req, res) => {
         })
 
     } catch (error) {
-
-        res.status(500).json({
-            message: error.message,
-        })
-
+        sendInternalError(res, error, 'Failed to fetch public projects')
     }
 }
 
@@ -85,11 +74,7 @@ const removeProject = async (req, res) => {
         })
 
     } catch (error) {
-
-        res.status(500).json({
-            message: error.message,
-        })
-
+        sendInternalError(res, error, 'Failed to delete project')
     }
 }
 
@@ -116,11 +101,7 @@ const toggleProjectVisibility = async (req, res) => {
         })
 
     } catch (error) {
-
-        res.status(500).json({
-            message: error.message,
-        })
-
+        sendInternalError(res, error, 'Failed to update project visibility')
     }
 }
 

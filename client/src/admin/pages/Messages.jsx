@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getAuthToken } from '../authSession'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -10,38 +11,25 @@ const Messages = () => {
 
 
 
-    const fetchMessages = async () => {
-
-        try {
-
-            const response = await fetch(
-
-                `${API}/api/contact`,
-
-                {
-                    headers: {
-
-                        Authorization:
-                            `Bearer ${localStorage.getItem('token')}`
-
-                    }
-                }
-            )
-
-            const data = await response.json()
-
-            setMessages(data)
-
-        } catch (error) {
-
-            console.log(error)
-
-        }
-
-    }
-
     useEffect(() => {
-        fetchMessages()
+        let isActive = true
+        fetch(
+            `${API}/api/contact`,
+            {
+                headers: {
+                    Authorization: `Bearer ${getAuthToken()}`,
+                },
+            }
+        )
+            .then((response) => response.json())
+            .then((data) => {
+                if (isActive) setMessages(data)
+            })
+            .catch((error) => console.log(error))
+
+        return () => {
+            isActive = false
+        }
     }, [])
 
     const deleteMessage = async (id) => {
@@ -49,7 +37,7 @@ const Messages = () => {
             await fetch(`${API}/api/contact/${id}`, {
                 method: 'DELETE',
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                    Authorization: `Bearer ${getAuthToken()}`
                 }
             })
             setMessages(messages.filter(msg => msg.id !== id))
@@ -63,7 +51,7 @@ const Messages = () => {
             await fetch(`${API}/api/contact/${id}/read`, {
                 method: 'PUT',
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                    Authorization: `Bearer ${getAuthToken()}`
                 }
             })
             setMessages(messages.map(msg => 

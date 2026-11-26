@@ -1,5 +1,6 @@
 const prisma = require('../db')
 const multer = require('multer')
+const sendInternalError = require('../utils/sendInternalError')
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -20,7 +21,12 @@ const upload = multer({
 
 const uploadResume = async (req, res) => {
     upload(req, res, async (err) => {
-        if (err) return res.status(400).json({ message: err.message })
+        if (err) {
+            const tooLarge = err.code === 'LIMIT_FILE_SIZE'
+            return res.status(tooLarge ? 413 : 400).json({
+                message: tooLarge ? 'Resume exceeds the 10 MiB size limit' : 'Invalid resume upload',
+            })
+        }
         if (!req.file) return res.status(400).json({ message: 'No file uploaded' })
 
         try {
@@ -46,8 +52,7 @@ const uploadResume = async (req, res) => {
                 },
             })
         } catch (error) {
-            console.log(error)
-            res.status(500).json({ message: error.message })
+            sendInternalError(res, error, 'Failed to store resume')
         }
     })
 }
@@ -67,7 +72,7 @@ const getResumes = async (req, res) => {
         })
         res.status(200).json({ success: true, resumes })
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        sendInternalError(res, error, 'Failed to fetch resumes')
     }
 }
 
@@ -93,7 +98,7 @@ const setActiveResume = async (req, res) => {
 
         res.status(200).json({ success: true, message: 'Active resume updated' })
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        sendInternalError(res, error, 'Failed to activate resume')
     }
 }
 
@@ -129,7 +134,7 @@ const getResumeInfo = async (req, res) => {
 
         res.status(404).json({ exists: false })
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        sendInternalError(res, error, 'Failed to fetch resume information')
     }
 }
 
@@ -178,7 +183,7 @@ const downloadResume = async (req, res) => {
 
         res.status(404).json({ message: 'No resume uploaded' })
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        sendInternalError(res, error, 'Failed to download resume')
     }
 }
 
@@ -194,7 +199,7 @@ const deleteResume = async (req, res) => {
         await prisma.resume.delete({ where: { id: Number(id) } })
         res.status(200).json({ success: true, message: 'Resume deleted' })
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        sendInternalError(res, error, 'Failed to delete resume')
     }
 }
 

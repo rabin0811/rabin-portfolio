@@ -1,9 +1,9 @@
 const express = require('express')
-const fs = require('fs')
-const path = require('path')
 const router = express.Router()
 const protect = require('../middleware/authMiddleware')
 const prisma = require('../db')
+const { deleteStoredFile } = require('../storage')
+const sendInternalError = require('../utils/sendInternalError')
 
 const {
     uploadResume,
@@ -31,8 +31,7 @@ router.post(
                 path: `/uploads/resume/${req.file.filename}`,
             })
         } catch (error) {
-            console.log(error)
-            res.status(500).json({ message: error.message })
+            sendInternalError(res, error, 'Failed to process resume upload')
         }
     }
 )
@@ -56,8 +55,7 @@ router.post(
                 path: `/uploads/projects/${req.file.filename}`,
             })
         } catch (error) {
-            console.log(error)
-            res.status(500).json({ message: error.message })
+            sendInternalError(res, error, 'Failed to process project image upload')
         }
     }
 )
@@ -81,8 +79,7 @@ router.post(
                 path: `/uploads/blogs/${req.file.filename}`,
             })
         } catch (error) {
-            console.log(error)
-            res.status(500).json({ message: error.message })
+            sendInternalError(res, error, 'Failed to process blog image upload')
         }
     }
 )
@@ -107,8 +104,7 @@ router.post(
             })
             res.status(200).json({ success: true, path: imagePath })
         } catch (error) {
-            console.log(error)
-            res.status(500).json({ message: error.message })
+            sendInternalError(res, error, 'Failed to update administrator profile image')
         }
     }
 )
@@ -122,22 +118,14 @@ router.delete(
     protect,
     async (req, res) => {
         try {
-            const filePath = path.join(
-                __dirname,
-                '../uploads/profile',
-                req.params.filename
-            )
-            if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath)
-            }
+            await deleteStoredFile('profile', req.params.filename)
             await prisma.admin.update({
                 where: { id: req.admin.id },
                 data: { profileImage: null },
             })
             res.status(200).json({ success: true, message: 'Profile image removed' })
         } catch (error) {
-            console.log(error)
-            res.status(500).json({ message: error.message })
+            sendInternalError(res, error, 'Failed to remove administrator profile image')
         }
     }
 )

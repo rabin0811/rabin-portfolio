@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async'
 
-const BASE_URL = 'https://rabin-portfolio.vercel.app'
+const BASE_URL = import.meta.env.VITE_SITE_URL || 'https://humagainrabin.com.np'
 
 const SEO = ({
     title = 'Rabin Humagain | Full Stack Developer',
@@ -12,8 +12,8 @@ const SEO = ({
     publishedTime,
     schema,
 }) => {
-    const fullUrl = `${BASE_URL}${url}`
-    const imageUrl = image.startsWith('http') ? image : `${BASE_URL}${image}`
+    const fullUrl = new URL(url, BASE_URL).toString()
+    const imageUrl = new URL(image, BASE_URL).toString()
 
     return (
         <Helmet>

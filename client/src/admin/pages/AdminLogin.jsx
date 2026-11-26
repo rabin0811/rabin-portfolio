@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { clearAuthToken, clearLegacyAuthToken, getAuthToken, setAuthToken } from '../authSession'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -10,7 +11,7 @@ const AdminLogin = () => {
     const [error, setError] = useState('')
     const [success, setSuccess] = useState('')
     const [isLoading, setIsLoading] = useState(false)
-    const [formData, setFormData] = useState({ email: '', password: '', name: '' })
+    const [formData, setFormData] = useState({ email: '', password: '', name: '', setupKey: '' })
     const [forgotEmail, setForgotEmail] = useState('')
     const [resetCode, setResetCode] = useState('')
     const [newPassword, setNewPassword] = useState('')
@@ -18,7 +19,8 @@ const AdminLogin = () => {
 
     useEffect(() => {
         const init = async () => {
-            const token = localStorage.getItem('token')
+            clearLegacyAuthToken()
+            const token = getAuthToken()
             if (token) {
                 try {
                     const res = await fetch(`${API}/api/auth/verify`, {
@@ -28,8 +30,10 @@ const AdminLogin = () => {
                         navigate('/admin/dashboard', { replace: true })
                         return
                     }
-                } catch {}
-                localStorage.removeItem('token')
+                } catch (error) {
+                    console.error('Token verification failed', error)
+                }
+                clearAuthToken()
             }
             try {
                 const adminRes = await fetch(`${API}/api/auth/check-admin`)
@@ -54,7 +58,12 @@ const AdminLogin = () => {
         try {
             const endpoint = mode === 'register' ? 'register' : 'login'
             const body = mode === 'register'
-                ? { email: formData.email, password: formData.password, name: formData.name }
+                ? {
+                    email: formData.email,
+                    password: formData.password,
+                    name: formData.name,
+                    setupKey: formData.setupKey,
+                }
                 : { email: formData.email, password: formData.password }
 
             const res = await fetch(`${API}/api/auth/${endpoint}`, {
@@ -71,9 +80,12 @@ const AdminLogin = () => {
                 return
             }
 
-            localStorage.setItem('token', data.token)
+            setAuthToken(data.token)
+            if (mode === 'register') {
+                setFormData((current) => ({ ...current, setupKey: '' }))
+            }
             setSuccess(mode === 'register' ? 'Account created successfully! Redirecting...' : 'Login successful! Redirecting...')
-            setTimeout(() => navigate('/admin/dashboard'), 800)
+            setTimeout(() => navigate('/admin/dashboard', { replace: true }), 800)
         } catch {
             setError('Network error. Please try again.')
             setIsLoading(false)
@@ -99,7 +111,7 @@ const AdminLogin = () => {
                 return
             }
             setCodeSent(true)
-            setSuccess('Reset code sent! Check your email.')
+            setSuccess('If an account exists for this email, reset instructions have been sent.')
         } catch {
             setError('Network error. Please try again.')
         }
@@ -143,7 +155,7 @@ const AdminLogin = () => {
         setMode((prev) => (prev === 'login' ? 'register' : 'login'))
         setError('')
         setSuccess('')
-        setFormData({ email: '', password: '', name: '' })
+        setFormData({ email: '', password: '', name: '', setupKey: '' })
     }
 
     if (adminExists === null) {
@@ -171,7 +183,7 @@ const AdminLogin = () => {
                         </h1>
                         <p className="text-zinc-400 text-sm">
                             {mode === 'forgot'
-                                ? codeSent ? 'Enter the code sent to your email' : 'Enter your email to receive a reset code'
+                                ? codeSent ? 'Enter the 64-character token sent to your email' : 'Enter your email to receive reset instructions'
                                 : isRegister
                                     ? 'Create the system administrator account'
                                     : 'Sign in to manage your portfolio'}
@@ -195,12 +207,15 @@ const AdminLogin = () => {
                             <form onSubmit={handleResetPassword} className="flex flex-col gap-4">
                                 <input
                                     type="text"
-                                    placeholder="6-digit code"
+                                    placeholder="Paste 64-character reset token"
                                     value={resetCode}
                                     onChange={(e) => setResetCode(e.target.value)}
-                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3.5 text-white outline-none focus:border-red-500 transition-colors placeholder-zinc-500 text-center text-2xl tracking-[0.5em]"
+                                    autoCapitalize="off"
+                                    autoComplete="one-time-code"
+                                    spellCheck={false}
+                                    maxLength={64}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3.5 text-white outline-none focus:border-red-500 transition-colors placeholder-zinc-500 text-center text-xs tracking-normal font-mono"
                                     required
-                                    maxLength={6}
                                 />
                                 <input
                                     type="password"
@@ -270,6 +285,19 @@ const AdminLogin = () => {
                                     value={formData.name}
                                     onChange={handleInputChange}
                                     className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3.5 text-white outline-none focus:border-red-500 transition-colors placeholder-zinc-500"
+                                />
+                            )}
+                            {isRegister && (
+                                <input
+                                    type="password"
+                                    name="setupKey"
+                                    placeholder="Initial admin setup key"
+                                    value={formData.setupKey}
+                                    onChange={handleInputChange}
+                                    autoComplete="off"
+                                    minLength={32}
+                                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3.5 text-white outline-none focus:border-red-500 transition-colors placeholder-zinc-500"
+                                    required
                                 />
                             )}
                             <input

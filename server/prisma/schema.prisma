@@ -72,3 +72,8 @@ model Resume {
   admin      Admin    @relation(fields: [adminId], references: [id])
   createdAt  DateTime @default(now())
 }
+
+model VisitorCounter {
+  id    Int @id @default(1)
+  total Int @default(0)
+}
